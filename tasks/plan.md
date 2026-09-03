@@ -35,7 +35,7 @@ The v0.1 compiler directly emits Wasm from a validated AST. It deliberately has 
 
 ### 1. Establish the compiler boundary
 
-- Add the approved Wasm encoder and Wasmtime test dependencies.
+- Add `wasm-encoder` 0.258.0 and Wasmtime 45.0.1; Wasmtime 45.0.1 is pinned because newer releases require a Rust compiler newer than the project toolchain (1.93.1).
 - Define source spans, diagnostic types, and the compile facade returning either Wasm bytes or source-aware errors.
 - Define CLI argument and filesystem error behavior.
 
@@ -80,7 +80,7 @@ The v0.1 compiler directly emits Wasm from a validated AST. It deliberately has 
 
 | Item | Plan | Mitigation / decision gate |
 |---|---|---|
-| Wasm libraries | Add `wasm-encoder` for binary generation and `wasmtime` for runtime integration tests. | Requires dependency approval before implementation. |
+| Wasm libraries | Use `wasm-encoder` 0.258.0 for binary generation and `wasmtime` 45.0.1 for runtime integration tests. | Wasmtime 45.0.1 is the newest release compatible with Rust 1.93.1; revisit when the toolchain is upgraded. |
 | ABI stability | Treat the spec's `bnc` imports and `nana_*` exports as a tested contract. | ABI changes require a spec and decision update. |
 | Input determinism | Snapshot all inputs before program statements, then flush outputs after them. | Runtime tests assert the ordering behavior. |
 | IEC integer semantics | Runtime `INT` arithmetic wraps as signed 16-bit arithmetic; out-of-range constant-folding results are diagnostics. | Unit tests cover both behaviors before code generation depends on them. |
@@ -101,6 +101,6 @@ The final increment additionally proves that emitted output is accepted by Wasmt
 
 ## Decisions Recorded
 
-- Add `wasm-encoder` and `wasmtime` after the task list is approved.
+- Add `wasm-encoder` 0.258.0 and `wasmtime` 45.0.1 after the task list is approved.
 - Runtime `INT` arithmetic wraps as signed 16-bit arithmetic; constant-folding results outside the `INT` range are diagnostics.
 - This implementation plan is approved.

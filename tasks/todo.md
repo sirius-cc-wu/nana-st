@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft for review. This task list implements the approved [`plan.md`](plan.md) and must be approved before implementation begins.
+Approved. This task list implements the approved [`plan.md`](plan.md).
 
 ## Dependency Order
 
@@ -15,10 +15,10 @@ foundation-cli
     -> runtime-vertical-slice
 ```
 
-- [ ] **Task: Establish the compiler facade and CLI** (`foundation-cli`)
+- [x] **Task: Establish the compiler facade and CLI** (`foundation-cli`)
   - Acceptance: `nanastc compile <input> --output <output>` validates required arguments, reads source, writes only successful compilation output, prints structured user-facing errors to stderr, and returns non-zero on failure. `wasm-encoder` is a normal dependency and `wasmtime` is a development dependency.
-  - Verify: Add CLI tests for missing arguments, unreadable source, and a stub compilation failure; run `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test`.
-  - Files: `Cargo.toml`, `src/main.rs`, `src/cli.rs`, `src/diagnostic.rs`, `tests/cli.rs`.
+  - Verify: CLI tests cover missing arguments, unreadable source, and stub compilation failure; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
+  - Files: `Cargo.toml`, generated `Cargo.lock`, `src/lib.rs`, `src/main.rs`, `src/cli.rs`, `tests/cli.rs`.
 
 - [ ] **Task: Define syntax data and lex v0.1 source** (`syntax-lexer`)
   - Depends on: `foundation-cli`

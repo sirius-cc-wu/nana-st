@@ -77,8 +77,8 @@ For every scan, the generated module reads all `VAR_INPUT` values before executi
 - Rust, edition 2024.
 - A native Linux command-line compiler named `nanastc`.
 - WebAssembly binary output targeting the core Wasm MVP (`wasm32` integer/control-flow features only).
-- Wasmtime as the Linux development and integration-test runtime.
-- A Wasm binary encoder (proposed: `wasm-encoder`) and Wasm validator/test runtime (proposed: `wasmtime`) may be added after dependency approval.
+- Wasmtime 45.0.1 as the Linux development and integration-test runtime; this is the newest supported release compatible with the project Rust toolchain (1.93.1).
+- `wasm-encoder` 0.258.0 for binary generation and `wasmtime` 45.0.1 for runtime integration tests.
 
 The compiler itself is a native Rust executable in v0.1; only the generated controller program is Wasm.
 
