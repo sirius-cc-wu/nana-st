@@ -3,6 +3,10 @@ name = "nana-st"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "nanastc"
+path = "src/main.rs"
+
 [dependencies]
 wasm-encoder = "0.258.0"
 

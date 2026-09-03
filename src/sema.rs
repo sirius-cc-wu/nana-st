@@ -392,15 +392,30 @@ fn analyze_binary(
                 span,
             ))
         }
-        BinaryOperator::Equal
-        | BinaryOperator::NotEqual
-        | BinaryOperator::Less
+        BinaryOperator::Equal | BinaryOperator::NotEqual => {
+            let (left, right) = analyze_equality_operands(left, right, variables)?;
+            let constant = match (left.constant.as_ref(), right.constant.as_ref()) {
+                (Some(left), Some(right)) => {
+                    Some(ConstantValue::Bool(compare_equal(operator, left, right)))
+                }
+                _ => None,
+            };
+
+            Ok(binary_expression(
+                operator,
+                left,
+                right,
+                DataType::Bool,
+                constant,
+                None,
+                span,
+            ))
+        }
+        BinaryOperator::Less
         | BinaryOperator::LessOrEqual
         | BinaryOperator::Greater
         | BinaryOperator::GreaterOrEqual => {
-            let left = analyze_expression(left, variables, None)?;
-            require_numeric(&left)?;
-            let right = analyze_expression(right, variables, Some(left.data_type))?;
+            let (left, right) = analyze_numeric_operands(left, right, variables, None)?;
             let constant = match (left.constant.as_ref(), right.constant.as_ref()) {
                 (Some(left), Some(right)) => Some(ConstantValue::Bool(compare(
                     operator,
@@ -425,9 +440,7 @@ fn analyze_binary(
         | BinaryOperator::Multiply
         | BinaryOperator::Divide => {
             let numeric_expected = expected_type.filter(|data_type| data_type.is_numeric());
-            let left = analyze_expression(left, variables, numeric_expected)?;
-            require_numeric(&left)?;
-            let right = analyze_expression(right, variables, Some(left.data_type))?;
+            let (left, right) = analyze_numeric_operands(left, right, variables, numeric_expected)?;
             let data_type = left.data_type;
             let constant = match (left.constant.as_ref(), right.constant.as_ref()) {
                 (Some(left), Some(right)) => Some(fold_numeric_binary(
@@ -450,6 +463,75 @@ fn analyze_binary(
                 span,
             ))
         }
+    }
+}
+
+fn analyze_equality_operands(
+    left: &Expression,
+    right: &Expression,
+    variables: &[AnalyzedVariable],
+) -> Result<(AnalyzedExpression, AnalyzedExpression), SemanticError> {
+    if is_numeric_constant_expression(left) && !is_numeric_constant_expression(right) {
+        return analyze_numeric_operands(left, right, variables, None);
+    }
+
+    let left = analyze_expression(left, variables, None)?;
+    match left.data_type {
+        DataType::Bool => {
+            let right = analyze_expression(right, variables, Some(DataType::Bool))?;
+            Ok((left, right))
+        }
+        DataType::Int | DataType::Dint => {
+            let right = analyze_expression(right, variables, Some(left.data_type))?;
+            Ok((left, right))
+        }
+    }
+}
+
+fn analyze_numeric_operands(
+    left: &Expression,
+    right: &Expression,
+    variables: &[AnalyzedVariable],
+    expected_type: Option<DataType>,
+) -> Result<(AnalyzedExpression, AnalyzedExpression), SemanticError> {
+    if let Some(expected_type) = expected_type {
+        let left = analyze_expression(left, variables, Some(expected_type))?;
+        require_numeric(&left)?;
+        let right = analyze_expression(right, variables, Some(expected_type))?;
+        return Ok((left, right));
+    }
+
+    if is_numeric_constant_expression(left) && !is_numeric_constant_expression(right) {
+        let right = analyze_expression(right, variables, None)?;
+        require_numeric(&right)?;
+        let left = analyze_expression(left, variables, Some(right.data_type))?;
+        return Ok((left, right));
+    }
+
+    let left = analyze_expression(left, variables, None)?;
+    require_numeric(&left)?;
+    let right = analyze_expression(right, variables, Some(left.data_type))?;
+    Ok((left, right))
+}
+
+fn is_numeric_constant_expression(expression: &Expression) -> bool {
+    match &expression.kind {
+        ExpressionKind::Integer(_) => true,
+        ExpressionKind::Unary {
+            operator: UnaryOperator::Negate,
+            expression,
+        } => is_numeric_constant_expression(expression),
+        ExpressionKind::Binary {
+            operator:
+                BinaryOperator::Add
+                | BinaryOperator::Subtract
+                | BinaryOperator::Multiply
+                | BinaryOperator::Divide,
+            left,
+            right,
+            ..
+        } => is_numeric_constant_expression(left) && is_numeric_constant_expression(right),
+        _ => false,
     }
 }
 
@@ -616,6 +698,19 @@ fn numeric_value(value: &ConstantValue) -> i64 {
         ConstantValue::Int(value) => i64::from(*value),
         ConstantValue::Dint(value) => i64::from(*value),
         ConstantValue::Bool(_) => unreachable!("numeric value requested for BOOL"),
+    }
+}
+
+fn compare_equal(operator: BinaryOperator, left: &ConstantValue, right: &ConstantValue) -> bool {
+    let equals = match (left, right) {
+        (ConstantValue::Bool(left), ConstantValue::Bool(right)) => left == right,
+        _ => numeric_value(left) == numeric_value(right),
+    };
+
+    match operator {
+        BinaryOperator::Equal => equals,
+        BinaryOperator::NotEqual => !equals,
+        _ => unreachable!("operator was limited to equality comparisons"),
     }
 }
 

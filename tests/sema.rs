@@ -1,7 +1,9 @@
 use nana_st::ast::{BinaryOperator, DataType, StorageClass};
 use nana_st::lexer::lex;
 use nana_st::parser::parse;
-use nana_st::sema::{AnalyzedExpressionKind, AnalyzedStatementKind, IntegerSemantics, analyze};
+use nana_st::sema::{
+    AnalyzedExpressionKind, AnalyzedStatementKind, ConstantValue, IntegerSemantics, analyze,
+};
 
 fn analyze_source(source: &str) -> nana_st::sema::AnalyzedProgram {
     let tokens = lex(source).expect("source should lex");
@@ -121,6 +123,114 @@ fn rejects_type_mismatches_and_unsupported_input_initializers() {
             .expect_err("input initializer should be unsupported")
     };
     assert!(unsupported_error.message.contains("only supported for VAR"));
+}
+
+#[test]
+fn infers_int_for_a_literal_on_the_left_of_a_comparison() {
+    let program = analyze_source(
+        "PROGRAM Main
+\
+         VAR
+\
+             count : INT := 0;
+\
+         END_VAR
+\
+         VAR_OUTPUT
+\
+             active : BOOL;
+\
+         END_VAR
+\
+         active := 1 < count;
+\
+         END_PROGRAM",
+    );
+
+    let AnalyzedStatementKind::Assignment { value, .. } = &program.statements[0].kind else {
+        panic!("statement should be an assignment");
+    };
+    assert_eq!(value.data_type, DataType::Bool);
+}
+
+#[test]
+fn infers_int_for_a_constant_expression_on_the_left_of_a_comparison() {
+    let program = analyze_source(
+        "PROGRAM Main
+\
+         VAR
+\
+             count : INT := 0;
+\
+         END_VAR
+\
+         VAR_OUTPUT
+\
+             active : BOOL;
+\
+         END_VAR
+\
+         active := 1 + 2 < count;
+\
+         END_PROGRAM",
+    );
+
+    let AnalyzedStatementKind::Assignment { value, .. } = &program.statements[0].kind else {
+        panic!("statement should be an assignment");
+    };
+    assert_eq!(value.data_type, DataType::Bool);
+}
+
+#[test]
+fn permits_equality_comparisons_between_boolean_variables() {
+    let program = analyze_source(
+        "PROGRAM Main
+\
+         VAR_INPUT
+\
+             left : BOOL;
+\
+             right : BOOL;
+\
+         END_VAR
+\
+         VAR_OUTPUT
+\
+             result : BOOL;
+\
+         END_VAR
+\
+         result := left = right;
+\
+         END_PROGRAM",
+    );
+
+    let AnalyzedStatementKind::Assignment { value, .. } = &program.statements[0].kind else {
+        panic!("statement should be an assignment");
+    };
+    assert_eq!(value.data_type, DataType::Bool);
+}
+
+#[test]
+fn folds_boolean_equality_constants() {
+    let program = analyze_source(
+        "PROGRAM Main
+\
+         VAR_OUTPUT
+\
+             result : BOOL;
+\
+         END_VAR
+\
+         result := TRUE <> FALSE;
+\
+         END_PROGRAM",
+    );
+
+    let AnalyzedStatementKind::Assignment { value, .. } = &program.statements[0].kind else {
+        panic!("statement should be an assignment");
+    };
+    assert_eq!(value.constant, Some(ConstantValue::Bool(true)));
 }
 
 #[test]

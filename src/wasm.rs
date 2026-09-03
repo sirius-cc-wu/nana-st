@@ -302,7 +302,12 @@ impl<'program> Emitter<'program> {
                 function.instructions().i32_const(0).i32_ne();
             }
             DataType::Int => {
-                function.instructions().i32_extend16_s();
+                function
+                    .instructions()
+                    .i32_const(16)
+                    .i32_shl()
+                    .i32_const(16)
+                    .i32_shr_s();
             }
             DataType::Dint => {}
         }

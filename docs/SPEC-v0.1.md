@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft for review.
+Approved. The v0.1 scope is implemented and verified by the task list in [`tasks/todo.md`](../tasks/todo.md).
 
 ## Objective
 
@@ -171,7 +171,7 @@ The first required runtime fixture is a Boolean pass-through program: one `VAR_I
 1. `nanastc compile <input.st> --output <output.wasm>` accepts a valid v0.1 ST program and writes a valid Wasm module.
 2. The module exports `nana_init` and `nana_scan` and imports only the specified `bnc` functions.
 3. A Wasmtime integration test can initialize the module, run at least two scans, and observe the expected BNC output changes.
-4. Invalid syntax, semantic errors, and unsupported features fail without producing a usable output module and identify the relevant source location.
+4. Invalid syntax, semantic errors, and unsupported features identify the relevant source location and do not create or modify the requested output module. Successful output replaces an existing module atomically.
 5. `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
 
 ## Open Questions

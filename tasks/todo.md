@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved. This task list implements the approved [`plan.md`](plan.md).
+Completed. This task list implements the approved [`plan.md`](plan.md).
 
 ## Dependency Order
 
@@ -44,8 +44,8 @@ foundation-cli
   - Verify: Compiler tests compile valid source, validate emitted bytes with Wasmtime, and assert the exact imports/exports; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
   - Files: `src/lib.rs`, `src/compiler.rs`, `src/wasm.rs`, `tests/compiler.rs`, `tests/cli.rs`.
 
-- [ ] **Task: Prove the Wasmtime scan-cycle vertical slice** (`runtime-vertical-slice`)
+- [x] **Task: Prove the Wasmtime scan-cycle vertical slice** (`runtime-vertical-slice`)
   - Depends on: `wasm-emitter`
-  - Acceptance: A fake BNC Wasmtime host compiles and instantiates the Boolean pass-through fixture, calls `nana_init`, changes inputs across two `nana_scan` calls, and observes the expected outputs. A failed compile leaves no usable output module.
-  - Verify: Run the runtime integration test and the standard verification commands.
-  - Files: `tests/fixtures/pass_through.st`, `tests/runtime.rs`, `tests/cli.rs`.
+  - Acceptance: A fake BNC Wasmtime host compiles and instantiates the Boolean pass-through fixture, calls `nana_init` and `nana_scan` across changed inputs, and observes the expected output. A multi-I/O scan-cycle test proves input snapshots precede output flushing and scalar state persists across scans; an end-to-end test proves runtime `INT` wrapping. A failed compile leaves an existing output unmodified; a successful compile atomically replaces it.
+  - Verify: Runtime integration tests, CLI output-safety tests, and a manual `cargo run --bin nanastc -- compile` invocation pass; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
+  - Files: `Cargo.toml`, `src/cli.rs`, `src/sema.rs`, `src/wasm.rs`, `tests/fixtures/pass_through.st`, `tests/runtime.rs`, `tests/sema.rs`, `tests/cli.rs`.

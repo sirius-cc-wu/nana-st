@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved. This plan implements the approved scope in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md). Implementation remains gated on approval of the task list.
+Approved and completed. This plan implements the approved scope in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md); completion evidence is recorded in [`todo.md`](todo.md).
 
 ## Objective
 
