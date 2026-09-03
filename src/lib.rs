@@ -1,4 +1,6 @@
+pub mod ast;
 pub mod cli;
+pub mod lexer;
 
 use std::error::Error;
 use std::fmt;

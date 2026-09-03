@@ -20,11 +20,11 @@ foundation-cli
   - Verify: CLI tests cover missing arguments, unreadable source, and stub compilation failure; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
   - Files: `Cargo.toml`, generated `Cargo.lock`, `src/lib.rs`, `src/main.rs`, `src/cli.rs`, `tests/cli.rs`.
 
-- [ ] **Task: Define syntax data and lex v0.1 source** (`syntax-lexer`)
+- [x] **Task: Define syntax data and lex v0.1 source** (`syntax-lexer`)
   - Depends on: `foundation-cli`
   - Acceptance: Span-carrying tokens recognize v0.1 keywords, identifiers, integer and Boolean literals, punctuation, and all supported operators. Invalid characters and unterminated token forms report their source location.
-  - Verify: Unit-test representative valid token streams and lexical errors; run the standard verification commands.
-  - Files: `src/ast.rs`, `src/lexer.rs`, `tests/lexer.rs`.
+  - Verify: Unit tests cover representative valid token streams and lexical errors; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
+  - Files: `src/lib.rs`, `src/ast.rs`, `src/lexer.rs`, `tests/lexer.rs`.
 
 - [ ] **Task: Parse the v0.1 program grammar** (`syntax-parser`)
   - Depends on: `syntax-lexer`
