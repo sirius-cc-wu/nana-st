@@ -38,11 +38,11 @@ foundation-cli
   - Verify: Unit tests cover valid analysis plus duplicate, unknown-name, type-mismatch, unsupported-feature, non-literal initializer, and constant-overflow diagnostics; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
   - Files: `src/lib.rs`, `src/sema.rs`, `tests/sema.rs`.
 
-- [ ] **Task: Generate valid BNC ABI Wasm** (`wasm-emitter`)
+- [x] **Task: Generate valid BNC ABI Wasm** (`wasm-emitter`)
   - Depends on: `semantic-analysis`
-  - Acceptance: Emit a validated core Wasm module with only the specified `bnc.read_input`/`bnc.write_output` imports and `nana_init`/`nana_scan` exports. The emitter uses persistent scalar state, snapshots inputs before statements, and flushes outputs afterward.
-  - Verify: Compile a valid AST and assert emitted bytes validate and expose the exact imports/exports; run the standard verification commands.
-  - Files: `src/wasm.rs`, `src/compiler.rs`, `tests/compiler.rs`.
+  - Acceptance: The compiler pipeline emits a validated core Wasm module with only the specified `bnc.read_input`/`bnc.write_output` imports and `nana_init`/`nana_scan` exports. The emitter uses persistent scalar state, snapshots inputs before statements, and flushes outputs afterward.
+  - Verify: Compiler tests compile valid source, validate emitted bytes with Wasmtime, and assert the exact imports/exports; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
+  - Files: `src/lib.rs`, `src/compiler.rs`, `src/wasm.rs`, `tests/compiler.rs`, `tests/cli.rs`.
 
 - [ ] **Task: Prove the Wasmtime scan-cycle vertical slice** (`runtime-vertical-slice`)
   - Depends on: `wasm-emitter`

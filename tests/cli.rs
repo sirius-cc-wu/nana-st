@@ -50,7 +50,8 @@ fn does_not_write_output_when_compilation_fails() {
 
     let source = test_directory.join("program.st");
     let output = test_directory.join("program.wasm");
-    fs::write(&source, "PROGRAM Main END_PROGRAM").expect("source should be written");
+    fs::write(&source, "PROGRAM Main missing := TRUE; END_PROGRAM")
+        .expect("source should be written");
 
     let error = run(&args(&[
         "compile",
@@ -58,7 +59,7 @@ fn does_not_write_output_when_compilation_fails() {
         "--output",
         output.to_str().expect("test path should be UTF-8"),
     ]))
-    .expect_err("the compiler facade is not implemented yet");
+    .expect_err("invalid source should fail compilation");
 
     assert!(matches!(error, CliError::Compile { .. }));
     assert!(!output.exists());
