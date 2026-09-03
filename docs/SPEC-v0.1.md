@@ -57,7 +57,7 @@ read_input(index: i32) -> i32
 write_output(index: i32, value: i32)
 ```
 
-Values use Wasm `i32` at this boundary. `BOOL` values are normalized to `0` or `1`; `INT` uses signed 16-bit semantics; and `DINT` uses signed 32-bit semantics.
+Values use Wasm `i32` at this boundary. `BOOL` values are normalized to `0` or `1`; `INT` uses signed 16-bit semantics; and `DINT` uses signed 32-bit semantics. Runtime `INT` arithmetic wraps as signed 16-bit arithmetic. The compiler folds constant expressions and diagnoses a constant result that is outside the `INT` range instead of wrapping it.
 
 ### Exports
 
@@ -176,6 +176,5 @@ The first required runtime fixture is a Boolean pass-through program: one `VAR_I
 
 ## Open Questions
 
-- Should `INT` arithmetic wrap, trap, or diagnose overflow in v0.1? The initial implementation should choose and test one policy before release.
 - What controller configuration will bind named physical BNC I/O to the declaration-order indices? v0.1 tests use a fake host; production configuration is out of scope.
 - Should a future BNC ABI use the WebAssembly Component Model and WIT? It is deferred until a production host interface is needed.

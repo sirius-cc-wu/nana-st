@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft for review. This plan implements the approved scope in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md); it does not authorize implementation until this plan is approved.
+Approved. This plan implements the approved scope in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md). Implementation remains gated on approval of the task list.
 
 ## Objective
 
@@ -83,7 +83,7 @@ The v0.1 compiler directly emits Wasm from a validated AST. It deliberately has 
 | Wasm libraries | Add `wasm-encoder` for binary generation and `wasmtime` for runtime integration tests. | Requires dependency approval before implementation. |
 | ABI stability | Treat the spec's `bnc` imports and `nana_*` exports as a tested contract. | ABI changes require a spec and decision update. |
 | Input determinism | Snapshot all inputs before program statements, then flush outputs after them. | Runtime tests assert the ordering behavior. |
-| IEC integer semantics | `INT` overflow policy is not yet selected. | Select and document wrap, trap, or diagnostic behavior before semantic/code-generation work. |
+| IEC integer semantics | Runtime `INT` arithmetic wraps as signed 16-bit arithmetic; out-of-range constant-folding results are diagnostics. | Unit tests cover both behaviors before code generation depends on them. |
 | Scope growth | PLC features such as functions, timers, direct I/O addresses, and retain state create distinct semantics. | Keep them rejected with diagnostics until separately specified. |
 | Clean-room provenance | No MATIEC material may enter the implementation or fixtures. | Write original fixtures from the approved spec and review contributions for provenance. |
 
@@ -99,11 +99,8 @@ cargo test
 
 The final increment additionally proves that emitted output is accepted by Wasmtime and meets the BNC ABI contract.
 
-## Requires Approval Before Implementation
+## Decisions Recorded
 
-1. Add `wasm-encoder` and `wasmtime` Cargo dependencies.
-2. Choose the v0.1 `INT` overflow policy:
-   - **wrap** as a signed 16-bit value;
-   - **trap** at runtime on overflow; or
-   - **diagnose** potentially overflowing constant expressions only.
-3. Approve this plan before producing the implementation task list.
+- Add `wasm-encoder` and `wasmtime` after the task list is approved.
+- Runtime `INT` arithmetic wraps as signed 16-bit arithmetic; constant-folding results outside the `INT` range are diagnostics.
+- This implementation plan is approved.
