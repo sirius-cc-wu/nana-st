@@ -26,11 +26,11 @@ foundation-cli
   - Verify: Unit tests cover representative valid token streams and lexical errors; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
   - Files: `src/lib.rs`, `src/ast.rs`, `src/lexer.rs`, `tests/lexer.rs`.
 
-- [ ] **Task: Parse the v0.1 program grammar** (`syntax-parser`)
+- [x] **Task: Parse the v0.1 program grammar** (`syntax-parser`)
   - Depends on: `syntax-lexer`
   - Acceptance: Parse exactly one `PROGRAM`, the three permitted declaration blocks, precedence-aware expressions, assignments, and `IF` statements into the AST. Syntax errors report a span and do not panic.
-  - Verify: Unit-test a pass-through program, expression precedence, `IF`/`ELSE`, and malformed syntax; run the standard verification commands.
-  - Files: `src/ast.rs`, `src/parser.rs`, `tests/parser.rs`.
+  - Verify: Unit tests cover declarations, assignments, `IF`/`ELSE`, expression precedence, malformed syntax, and source after `END_PROGRAM`; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
+  - Files: `src/lib.rs`, `src/ast.rs`, `src/parser.rs`, `tests/parser.rs`.
 
 - [ ] **Task: Analyze names, types, and constants** (`semantic-analysis`)
   - Depends on: `syntax-parser`
