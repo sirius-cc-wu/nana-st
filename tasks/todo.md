@@ -32,11 +32,11 @@ foundation-cli
   - Verify: Unit tests cover declarations, assignments, `IF`/`ELSE`, expression precedence, malformed syntax, and source after `END_PROGRAM`; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
   - Files: `src/lib.rs`, `src/ast.rs`, `src/parser.rs`, `tests/parser.rs`.
 
-- [ ] **Task: Analyze names, types, and constants** (`semantic-analysis`)
+- [x] **Task: Analyze names, types, and constants** (`semantic-analysis`)
   - Depends on: `syntax-parser`
-  - Acceptance: Resolve variables, reject duplicate or unknown declarations, enforce the permitted `BOOL`/`INT`/`DINT` operations and assignments, and assign declaration-order I/O indices. Runtime `INT` operations are marked as wrapping; a folded constant outside the signed 16-bit range is a diagnostic.
-  - Verify: Unit-test valid analysis plus duplicate, unknown-name, type-mismatch, unsupported-feature, and constant-overflow diagnostics; run the standard verification commands.
-  - Files: `src/ast.rs`, `src/sema.rs`, `tests/sema.rs`.
+  - Acceptance: Resolve variables, reject duplicate or unknown declarations, enforce the permitted `BOOL`/`INT`/`DINT` operations and assignments, reject non-literal or non-`VAR` initializers, and assign declaration-order I/O indices. Runtime `INT` operations are marked as wrapping; a folded constant outside the signed 16-bit range is a diagnostic.
+  - Verify: Unit tests cover valid analysis plus duplicate, unknown-name, type-mismatch, unsupported-feature, non-literal initializer, and constant-overflow diagnostics; `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
+  - Files: `src/lib.rs`, `src/sema.rs`, `tests/sema.rs`.
 
 - [ ] **Task: Generate valid BNC ABI Wasm** (`wasm-emitter`)
   - Depends on: `semantic-analysis`
