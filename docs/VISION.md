@@ -91,6 +91,8 @@ own BNC device integration or control policy.
   baseline that this vision extends.
 - Candidate direction: [`docs/ideas/nanast-wasm-realtime-runner.md`](ideas/nanast-wasm-realtime-runner.md)
   records the approved Wasm runner feasibility gate.
+- Current feature requirements:
+  [`docs/features/wasm-realtime-runner/requirements.md`](features/wasm-realtime-runner/requirements.md).
 - Evidence: [`docs/SPEC-v0.1.md`](SPEC-v0.1.md) at revision `a63b5ca` defines
   the completed compiler vertical slice, its Wasm ABI, and its current scope
   limits.
