@@ -1,20 +1,29 @@
 ---
 type: "Supplementary Specification"
 title: "Requirements: NanaST Wasm Real-Time Runner Feasibility"
-description: "Approved scope, timing, load, thermal, and DTC-reporting requirements for the ARM64 host-neutral runner benchmark."
-status: "approved"
+description: "Superseded scope, timing, load, thermal, and DTC-reporting requirements for the former ARM64 Wasm runner benchmark."
+status: "superseded"
 revision: "5633aa2"
 tags: [requirements, nanast, wasm, real-time]
 ---
 
 # Requirements: NanaST Wasm Real-Time Runner Feasibility
 
-## Purpose and Scope
+## Superseded
 
-NanaST must establish whether a prepared Wasm runner can meet real-time timing
-limits before BNC integration begins. The feasibility test is a NanaST
-responsibility. It does not integrate with BNC, EtherCAT, DoIP, UDS, DIDs, or a
-`vcmd` mapping. It uses fake `INT` host inputs and outputs.
+The approved rtForth vision superseded this Wasm/Wasmtime feasibility feature on
+2026-09-06. These requirements retain the former decision context and do not
+authorize implementation or verification work. rtForth target requirements must
+be specified separately. All remaining present-tense, normative, and
+item-level approval wording records the former experiment and is superseded.
+
+## Historical Purpose and Scope
+
+This former feature was intended to establish whether a prepared Wasm runner
+could meet real-time timing limits before BNC integration began. The feasibility
+test was a NanaST responsibility. It did not integrate with BNC, EtherCAT,
+DoIP, UDS, DIDs, or a `vcmd` mapping, and used fake `INT` host inputs and
+outputs.
 
 The first target is a LubanCAT 1N with an RK3566 ARM64 CPU. Linux PREEMPT_RT is
 the test environment. AMD64 is deferred until ARM64 succeeds.
@@ -41,11 +50,11 @@ recorded because real-time execution preempts them.
   a core. It can be lower than `background_load_request` because periodic
   real-time work preempts it.
 
-## Quality Requirements
+## Historical Quality Requirements
 
-The thresholds below are approved by Sirius Wu. No verification result exists
-yet. Each requirement applies after the module is prepared and warmed outside
-the periodic path.
+At acceptance, Sirius Wu approved the thresholds below. No verification
+result was recorded. Each historical requirement applied after the module was
+prepared and warmed outside the periodic path.
 
 - **QR-PLC-RT:** Given the PLC runner runs on the ARM64 target under the stated
   test conditions, it shall complete every scan within 5 ms and remain within
@@ -71,7 +80,7 @@ the periodic path.
   - Affected boundary: Target verification evidence.
   - Verification: Retained measurement log and operator review.
 
-## Binding Constraints
+## Historical Binding Constraints
 
 - **BC-JITTER-MEASURE:** The harness shall calculate maximum absolute wake-up
   deviation as `max(abs(min_jitter), abs(max_jitter))`. It shall not use only
@@ -117,33 +126,38 @@ the periodic path.
   - Source and status: Sirius Wu, approved.
   - Verification: Retained measurement log and operator review.
 
-## Delegated Benchmark Definition
+## Historical Delegated Benchmark Definition
 
 The runner feasibility work may define a synthetic, bounded benchmark that
 represents the 50 percent scan load. This authority is delegated by Sirius Wu.
 A trivial pass-through module does not prove the 50 percent condition.
 
-## Failure Reporting Boundary
+## Historical Failure Reporting Boundary
 
 The harness converts a Wasm execution failure into a diagnostic trouble code
 (DTC) report and stops the affected test scan cleanly. For example, a
-non-constant zero divisor can make the current Wasm signed division trap. The
-harness verifies the DTC report. BNC owns DTC persistence, publication,
+non-constant zero divisor could make the former Wasm signed division trap. The
+harness would verify the DTC report. BNC owns DTC persistence, publication,
 DoIP/UDS handling, and any control safety response.
 
-## Decision Gate
+## Historical Decision Gate
 
-- If the PLC gate passes, continue with a BNC PLC runner.
-- If the motion gate also passes, continue with motion-loop integration for the
-  EDM orbit-velocity case.
-- If motion fails and PLC passes, retain the PLC scope and defer motion-loop
-  execution.
-- If PLC fails, do not integrate Wasmtime as the BNC runner. Evaluate a native
-  execution backend without reverting ST programs to rtForth.
+- If the PLC gate had passed, the former direction would have continued with a
+  BNC PLC runner.
+- If the motion gate had also passed, it would have continued with motion-loop
+  integration for the EDM orbit-velocity case.
+- If motion had failed while PLC passed, it would have retained PLC scope and
+  deferred motion-loop execution.
+- If PLC had failed, it would not have integrated Wasmtime as the BNC runner;
+  it would have evaluated a native execution backend without reverting ST
+  programs to rtForth.
 
 ## Traceability
 
-- Candidate-direction history and approval: [`docs/ideas/nanast-wasm-realtime-runner.md`](../../ideas/nanast-wasm-realtime-runner.md), commit `5633aa2`.
-- Approved vision: [`docs/VISION.md`](../../VISION.md), commit `1501430`.
-- Current compiler ABI: [`docs/SPEC-v0.1.md`](../../SPEC-v0.1.md), commit `a63b5ca`.
-- Current feature architecture: [`architecture.md`](architecture.md).
+- Historical candidate direction:
+  [`docs/ideas/nanast-wasm-realtime-runner.md`](../../ideas/nanast-wasm-realtime-runner.md)
+  was approved at `1501430`; its constraints were revised at `5633aa2` and
+  organized as this feature at `612c003`.
+- Former vision approval: [`docs/VISION.md`](../../VISION.md), commit `1501430`.
+- Former compiler ABI: [`docs/SPEC-v0.1.md`](../../SPEC-v0.1.md), commit `a63b5ca`.
+- Historical feature architecture: [`architecture.md`](architecture.md).

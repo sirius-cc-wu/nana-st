@@ -1,22 +1,29 @@
 ---
 type: "Software Architecture Design"
 title: "Architecture: NanaST Wasm Real-Time Runner Feasibility"
-description: "Proposes the smallest host-neutral runner and benchmark structure for ARM64 real-time feasibility evidence."
-status: "accepted"
+description: "Superseded architecture for the former host-neutral ARM64 Wasm runner feasibility benchmark."
+status: "superseded"
 tags: [architecture, nanast, wasm, real-time]
 ---
 
 # Architecture: NanaST Wasm Real-Time Runner Feasibility
 
-## Architecture Question
+## Superseded
+
+The approved rtForth vision superseded this Wasm/Wasmtime architecture on
+2026-09-06. Retain it as historical design context; it does not authorize
+implementation or verification work. All remaining present-tense and imperative
+wording records the former design and is not current instruction.
+
+## Historical Architecture Question
 
 How can NanaST measure a prepared Wasmtime module on the ARM64 Linux PREEMPT_RT
 target without BNC integration, while preserving the periodic-path, timing,
 thermal, and DTC-reporting constraints in the approved feasibility direction?
 
-Authority: Sirius Wu. This design is accepted.
+At acceptance, the authority was Sirius Wu. This design is historical.
 
-## Significant Drivers
+## Historical Significant Drivers
 
 - A prepared PLC scan must complete within 5 ms at a 10 ms period. A prepared
   motion scan must complete within 500 us at a 1 ms period.
@@ -32,17 +39,17 @@ Authority: Sirius Wu. This design is accepted.
 - BNC, EtherCAT, DoIP/UDS, DID, `vcmd`, DTC storage, publication, and safety
   behavior are out of scope.
 
-The complete approved quality requirements and constraints are in
+The complete historical quality requirements and constraints are in
 [`requirements.md`](requirements.md).
 
-## Context and Boundaries
+## Historical Context and Boundaries
 
 NanaST provides the compiler, the test module, the Wasmtime runner, and the
 benchmark process. The test process runs on a LubanCAT 1N with Linux PREEMPT_RT.
 It reads local temperature and execution information. It does not connect to
 BNC or EtherCAT hardware.
 
-The current Wasm contract imports `bnc.read_input` and `bnc.write_output`, and
+The former Wasm contract imports `bnc.read_input` and `bnc.write_output`, and
 exports `nana_init` and `nana_scan`. The feasibility host provides fake `INT`
 inputs and outputs through these imports. Each Wasm module keeps program state
 in mutable globals. Therefore, each periodic worker owns one separate module
@@ -138,43 +145,44 @@ Reject it for this experiment.
 
 ## Decision Status
 
-Sirius Wu selected Candidate A. It separates module preparation from periodic
-execution, keeps each stateful instance confined to one worker, and makes the
-feasibility result independent of BNC integration.
+At acceptance, Sirius Wu selected Candidate A. The rtForth vision superseded
+that selection on 2026-09-06 before a feasibility result was recorded.
 
-Wasmtime remains the evaluated engine, not a permanent production-engine
-selection. Candidate B remains a later option.
+Wasmtime is no longer an evaluated NanaST engine. Candidate B is historical and
+not a later option under the current vision.
 
-## Verification
+## Historical Verification
 
-- Inspect the periodic path to show that it starts with a prepared runner and
-  performs no module preparation.
-- Exercise a dynamic divide-by-zero scan and verify one local DTC report and a
-  stopped affected worker.
-- Run the approved ARM64 timing, load, and thermal measurement. No result is
-  recorded by this design.
-- Review retained timing, scan duration, missed-deadline, temperature,
-  frequency, throttling, ambient, cooling, and adjusted-load evidence against
-  the approved gates.
+- It would have inspected the periodic path to show that it started with a
+  prepared runner and performed no module preparation.
+- It would have exercised a dynamic divide-by-zero scan and verified one local
+  DTC report and a stopped affected worker.
+- It would have run the approved ARM64 timing, load, and thermal measurement.
+  No result was recorded by this design.
+- It would have reviewed retained timing, scan duration, missed-deadline,
+  temperature, frequency, throttling, ambient, cooling, and adjusted-load
+  evidence against the approved gates.
 
-## Detailed-Design Handoffs
+## Historical Detailed-Design Handoffs
 
-- **Rust lifecycle design:** Define ownership and startup, warm-reset,
-  cancellation, invalidation, join, and cleanup of the engine, runner,
-  periodic workers, load workers, thermal controller, and result collector.
-- **Rust implementation design:** Define the smallest testable runner,
-  benchmark, DTC outcome, timing record, and thermal-sample interfaces.
-- **Implementation and verification:** Build the synthetic benchmark and the
-  prepared-runner benchmark only after this architecture is approved.
+- **Rust lifecycle design:** Would have defined ownership and startup,
+  warm-reset, cancellation, invalidation, join, and cleanup of the engine,
+  runner, periodic workers, load workers, thermal controller, and result
+  collector.
+- **Rust implementation design:** Would have defined the smallest testable
+  runner, benchmark, DTC outcome, timing record, and thermal-sample interfaces.
+- **Implementation and verification:** Would have built the synthetic benchmark
+  and prepared-runner benchmark after this architecture was approved.
 
 ## Evidence
 
-- Approved vision: [`docs/VISION.md`](../../VISION.md), commit `1501430`.
-- Approved requirements: [`requirements.md`](requirements.md), commit `5633aa2`.
-- Approved candidate direction:
+- Former vision approval: [`docs/VISION.md`](../../VISION.md), commit `1501430`.
+- Historical requirements: [`requirements.md`](requirements.md), first approved
+  at `5633aa2` and organized as this feature at `612c003`.
+- Historical candidate direction:
   [`docs/ideas/nanast-wasm-realtime-runner.md`](../../ideas/nanast-wasm-realtime-runner.md),
-  commit `5633aa2`.
-- Current compiler ABI: [`docs/SPEC-v0.1.md`](../../SPEC-v0.1.md), commit `a63b5ca`.
-- Current Wasm emitter: [`src/wasm.rs`](../../../src/wasm.rs).
+  commit `1501430`; its constraints were revised at `5633aa2`.
+- Former compiler ABI: [`docs/SPEC-v0.1.md`](../../SPEC-v0.1.md), commit `a63b5ca`.
+- Former Wasm emitter: [`src/wasm.rs`](../../../src/wasm.rs).
 - Wasmtime 45.0.1 documents `Engine::precompile_module` as preparation-time
   AOT support. This is capability evidence, not a target timing result.

@@ -1,8 +1,8 @@
 ---
 type: "Rust Lifecycle Design"
 title: "Rust Lifecycle Design: Wasm Real-Time Runner Feasibility"
-description: "Proposes ownership, startup, cancellation, and cleanup for the prepared Wasmtime benchmark."
-status: "proposed"
+description: "Superseded ownership, startup, cancellation, and cleanup proposal for the former prepared Wasmtime benchmark."
+status: "superseded"
 language: "rust"
 revision: "5633aa2"
 tags: [design, rust, lifecycle, wasm, real-time]
@@ -10,18 +10,28 @@ tags: [design, rust, lifecycle, wasm, real-time]
 
 # Rust Lifecycle Design: Wasm Real-Time Runner Feasibility
 
-## At a Glance
+## Superseded
 
-A consuming `TrialPlan -> PreparedTrial -> ActiveTrial -> TrialReport`
-lifecycle separates all fallible Wasmtime preparation from periodic execution.
+The approved rtForth vision superseded this proposed Wasm/Wasmtime lifecycle on
+2026-09-06. Retain it as historical design context; it does not authorize
+implementation or verification work. All remaining present-tense, imperative,
+and reconsideration wording records the former proposal and is not current
+instruction.
+
+## Historical At a Glance
+
+This historical proposal used a consuming
+`TrialPlan -> PreparedTrial -> ActiveTrial -> TrialReport` lifecycle to
+separate all fallible Wasmtime preparation from periodic execution.
 Each periodic thread owns one prepared runner and its mutable Wasm state.
 `ActiveTrial` explicitly stops and joins every child thread. `Drop` only signals
 an emergency stop; it never joins or waits.
 
-The main residual risk is runtime behavior inside `nana_scan`. The target
-benchmark, not this lifecycle design, must establish real-time suitability.
+At proposal time, the main residual risk was runtime behavior inside
+`nana_scan`. The target benchmark, not this lifecycle design, would have needed
+to establish real-time suitability.
 
-## Design Context and Responsibility Inputs
+## Historical Design Context and Responsibility Inputs
 
 - System boundary: The NanaST ARM64 Linux PREEMPT_RT benchmark process. BNC,
   EtherCAT, DoIP/UDS, DID, `vcmd`, BNC DTC storage, and BNC safety behavior are
@@ -31,8 +41,8 @@ benchmark, not this lifecycle design, must establish real-time suitability.
   hour, and retain a timing or DTC outcome.
 - Verification oracle: The ARM64 timing, load, thermal, missed-deadline, and
   DTC checks in [`requirements.md`](requirements.md).
-- Compatibility obligations: Preserve the current `bnc.read_input` and
-  `bnc.write_output` imports and `nana_init` and `nana_scan` exports.
+- Historical compatibility obligation: Preserve the former `bnc.read_input`
+  and `bnc.write_output` imports and `nana_init` and `nana_scan` exports.
 
 | Native responsibility | Selected owner | Lifecycle consequence |
 | --- | --- | --- |
@@ -237,7 +247,7 @@ secrets, or hardware control actions.
 - Only a complete one-hour, thermally valid measurement can produce a passing
   report for its recorded load profile.
 
-## Verification Obligations
+## Historical Verification Obligations
 
 - Focused lifecycle: invalid plans, tuning failure, Wasmtime link or warm
   failure, partial startup, readiness failure, explicit abort, DTC, thermal
@@ -253,29 +263,30 @@ secrets, or hardware control actions.
 - Compatibility: preserve the v0.1 Wasm imports, exports, input snapshot, and
   output-flush behavior.
 
-## Completion Boundary
+## Historical Completion Boundary
 
-- Result: This design enables implementation of the isolated runner benchmark.
-  It does not establish PLC or motion real-time feasibility.
-- Evidence: Lifecycle-focused checks and a representative ARM64 benchmark are
-  still required.
+- Result: At proposal time, this design was intended to enable implementation
+  of the isolated runner benchmark. It did not establish PLC or motion
+  real-time feasibility.
+- Evidence: Lifecycle-focused checks and a representative ARM64 benchmark would
+  have been required.
 - Remaining vertical gap: BNC integration, EtherCAT mapping, DTC publication,
-  and control safety behavior remain outside this result.
+  and control safety behavior remained outside this result.
 
-## Deferred Abstractions
+## Historical Deferred Abstractions
 
 | Candidate | Why deferred | Trigger to reconsider |
 | --- | --- | --- |
-| Runtime-engine trait | Only Wasmtime is an approved experiment candidate. | A second evaluated engine needs the same runner contract. |
+| Runtime-engine trait | At proposal time, only Wasmtime was an approved experiment candidate. | A second evaluated engine would have needed the same runner contract. |
 | Host-interface trait | Only one fake host exists for the benchmark. | A second non-BNC host or BNC integration needs substitution. |
 | Typestate API | Private phase state and consuming terminal operations prevent material misuse. | A public reusable runner needs callers to distinguish prepared and active states at compile time. |
 | Automatic thermal load policy | The authority did not define a reduction algorithm. | A reviewed policy specifies how adjusted loads are selected. |
 
 ## Traceability
 
-- Accepted architecture: [`architecture.md`](architecture.md).
-- Approved quality constraints: [`requirements.md`](requirements.md).
-- Current ABI and runtime test shape: [`src/wasm.rs`](../../../src/wasm.rs) and
+- Historical accepted architecture: [`architecture.md`](architecture.md).
+- Historical quality constraints: [`requirements.md`](requirements.md).
+- Former ABI and runtime-test shape: [`src/wasm.rs`](../../../src/wasm.rs) and
   [`tests/runtime.rs`](../../../tests/runtime.rs).
 - Wasmtime 45.0.1 evidence: `Module` is `Send + Sync`; host functions require
   `Send + Sync + 'static`; `Store<T>` can be `Send + Sync` when `T` satisfies

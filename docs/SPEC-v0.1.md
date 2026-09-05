@@ -2,13 +2,19 @@
 
 ## Status
 
-Approved. The v0.1 scope is implemented and verified by the task list in [`tasks/todo.md`](../tasks/todo.md).
+Superseded as NanaST's current target specification by the approved
+[rtForth vision](VISION.md) on 2026-09-06. This document records the completed
+Wasm v0.1 implementation and remains historical build and behavior evidence;
+the completed task list is [`tasks/todo.md`](../tasks/todo.md). It does not
+authorize future Wasm-target work. All remaining present-tense and normative
+wording records the completed v0.1 baseline; it is not current direction or
+instruction.
 
 ## Objective
 
-NanaST is a Rust command-line compiler for Botnana Control (BNC). Version 0.1 proves the end-to-end toolchain: it compiles a deliberately small Structured Text (ST) program into a WebAssembly module that BNC can execute cyclically on Linux through Wasmtime.
+NanaST is a Rust command-line compiler for Botnana Control (BNC). Version 0.1 proved the end-to-end toolchain: it compiled a deliberately small Structured Text (ST) program into a WebAssembly module that BNC could execute cyclically on Linux through Wasmtime.
 
-The intended user is a BNC developer validating controller logic from the command line. Success is not IEC 61131-3 completeness or production controller readiness; it is a reliable, tested compile-and-run vertical slice.
+The intended user was a BNC developer validating controller logic from the command line. Success was not IEC 61131-3 completeness or production controller readiness; it was a reliable, tested compile-and-run vertical slice.
 
 ### User workflow
 

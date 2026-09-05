@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved and completed. This plan implements the approved scope in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md); completion evidence is recorded in [`todo.md`](todo.md).
+Completed historical plan. It implements the former Wasm scope in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md); completion evidence is recorded in [`todo.md`](todo.md). The approved [rtForth vision](../docs/VISION.md) superseded that direction on 2026-09-06. All remaining directives record completed work and are not current instruction.
 
 ## Objective
 

@@ -1,82 +1,86 @@
 ---
 type: "Vision"
 title: "Vision: NanaST"
-description: "NanaST gives BNC/control developers a portable Structured Text path that can replace rtForth incrementally when target real-time evidence supports it."
+description: "NanaST gives BNC/control developers a Structured Text path targeting BNC's existing rtForth environment."
 status: "approved"
-tags: [vision, governance, nanast]
+tags: [vision, governance, nanast, rtforth]
 ---
 
 # Vision: NanaST
 
-NanaST exists so BNC/control developers can incrementally replace rtForth
-programs with portable, testable Structured Text (ST) modules.
+NanaST exists so BNC/control developers can incrementally introduce testable
+Structured Text (ST) programs through a translation that a future approved
+target feature specification must explicitly define for BNC's existing rtForth
+environment.
 
-It owns a defined ST subset, the compiler and Wasm module contract, and a
-host-neutral runner library with real-time feasibility evidence. It does not
-own BNC device integration or control policy.
+It owns defining its ST subset, source-aware diagnostics, the future
+ST-to-rtForth target contract, and compiler-correctness evidence. It does not
+own the rtForth runtime implementation, BNC device integration, or BNC control
+policy.
 
 ## Principles
 
-- **ST is the program language:** Add a small, explicit ST subset for real BNC
-  control work. Reject unsupported forms with source-located diagnostics. Do
-  not translate ST to rtForth.
-- **Wasm is the portable program contract:** Compile a program to a Wasm module
-  so it can move between supported CPU architectures. Keep runner internals
-  replaceable until target evidence selects them.
-- **Real-time claims require target evidence:** Prepare modules outside a
-  periodic path. Accept a runner for a loop only after it meets that loop's
-  recorded timing gate on the target hardware.
-- **Migration is incremental:** Keep existing rtForth programs working in BNC
-  while ST programs gain equivalent, verified use cases. Do not require an
-  all-at-once Forth migration.
-- **Failures are diagnosable:** Report a Wasm execution failure as a diagnostic
-  trouble code (DTC). Make the runner report testable without assigning BNC
-  safety behavior to NanaST.
+- **ST is the program language:** Specify a small, explicit ST subset for real
+  BNC control work. Reject unsupported forms with source-located diagnostics.
+- **rtForth is the execution target:** A target feature specification must
+  define how a specified ST program translates to an artifact that BNC's
+  existing rtForth environment accepts. Keep that target contract explicit and
+  testable.
+- **Migration is incremental:** Keep existing rtForth programs working while
+  ST-generated target artifacts gain equivalent, verified control cases. Do not
+  require an all-at-once migration.
+- **Real-time claims require target evidence:** Do not infer a timing, memory,
+  safety, or motion claim merely because BNC already uses rtForth. A target
+  feature specification and recorded evidence must establish any such claim for
+  a generated control case.
+- **Translation failures are diagnosable:** Preserve source-aware translation
+  diagnostics. BNC and rtForth own target-execution failure reporting, including
+  DTC persistence, publication, and safety behavior.
 - **BNC owns BNC integration:** Keep EtherCAT mapping, DTC persistence and
-  publication, DoIP/UDS, DID design, `vcmd` meaning, and control safety policy
-  in BNC. Keep NanaST host interfaces narrow and device-neutral.
-- **Scope grows from demonstrated need:** Add language features, runner APIs,
-  and execution topology only when a named BNC control case and verification
+  publication, DoIP/UDS, DID design, `vcmd` meaning, scheduling integration,
+  and control safety policy in BNC. Keep NanaST's rtForth target boundary narrow
+  and device-neutral.
+- **Scope grows from demonstrated need:** Add language features or rtForth
+  target capabilities only when a named BNC control case and verification
   evidence justify them.
 
 ## Non-Goals
 
 - Full IEC 61131-3 or MATIEC compatibility.
 - An IDE, online debugging, or a general PLC engineering environment.
-- BNC EtherCAT, DTC persistence or publication, DoIP/UDS, DID, or `vcmd`
-  integration.
-- A permanent commitment to Wasmtime before the ARM64 feasibility gate passes.
-- A Forth backend for ST or forced removal of existing rtForth programs.
+- BNC EtherCAT, DTC persistence or publication, DoIP/UDS, DID, `vcmd`,
+  scheduling, or control-safety integration.
+- A Wasm output contract, a Wasmtime runner, Mecrisp, or a direct native-code
+  target.
+- Forced removal or wholesale replacement of existing rtForth programs.
 - A production-safety or real-time-motion claim without target evidence.
 
 ## Acceptance Policy
 
 - A change aligns when it gives BNC/control developers a clearer, tested path
-  from a defined ST program to a portable Wasm module or a host-neutral runner.
-- A change aligns when it closes a recorded ARM64 real-time feasibility risk
-  through reproducible target evidence.
-- A change aligns when it adds the smallest ST or runner capability needed by a
-  named BNC control case and preserves explicit diagnostics and tests.
-- A change aligns when it reports Wasm execution failures as testable DTCs
-  without coupling the runner to BNC DTC storage or publication.
+  from an ST subset specified for a named BNC control case to an approved
+  rtForth target contract.
+- A change aligns when it preserves the semantics and diagnostics specified for
+  that target feature and supports incremental coexistence with existing
+  rtForth programs.
+- A change aligns when it adds the smallest ST or target capability needed by a
+  named BNC control case and includes verification evidence.
 - A change should be resisted when it couples NanaST to EtherCAT devices, BNC
-  DTC storage, DIDs, DoIP/UDS, or BNC control policy.
-- A change should be resisted when it expands toward full IEC support, an IDE,
-  or a permanent engine selection without approved use-case and target
-  evidence.
-- A change should be resisted when it breaks rtForth coexistence or makes ST
-  execute through rtForth.
+  DTC persistence, DIDs, DoIP/UDS, scheduling, or BNC control policy.
+- A change should be resisted when it adds Wasm, Wasmtime, Mecrisp, a direct
+  native-code backend, broad IEC syntax, or an IDE without a later approved
+  vision revision.
 
 ## Boundary Cases
 
-- **Wasmtime meets the PLC gate but not the motion gate:** Accept a PLC runner
-  and retain the motion runner as deferred work. Resist a claim that NanaST is
-  ready for motion control.
-- **A BNC contribution requests an EtherCAT-specific `vcmd` import:** Accept a
-  device-neutral scalar host boundary when it serves the runner contract.
-  Resist the EtherCAT or DID mapping because BNC owns it.
-- **A runner scan fails:** Accept a testable DTC report from NanaST. Resist BNC
-  DTC storage, publication, or safety behavior in NanaST.
+- **A contribution proposes a Wasm, Mecrisp, or native-code backend:** Resist
+  it. NanaST's approved target is BNC's existing rtForth environment.
+- **A BNC contribution requests an EtherCAT-specific target operation:** Accept
+  a narrow, device-neutral target operation only when BNC already owns its
+  mapping. Resist the EtherCAT or DID mapping itself.
+- **A target execution fails:** BNC and rtForth own its reporting, DTC
+  persistence, publication, and safety behavior. Resist adding a NanaST runtime
+  report; accept only source-aware NanaST translation diagnostics.
 - **A contributor requests broad IEC syntax without a control case:** Accept a
   narrowly specified feature when a named BNC program and tests need it.
   Resist generic completeness work.
@@ -86,18 +90,21 @@ own BNC device integration or control policy.
 
 ## Authority and Evidence
 
-- Authority and status: Sirius Wu approved this vision.
-- Approved source revision: NanaST revision `a63b5ca`, the completed v0.1
-  baseline that this vision extends.
-- Candidate direction: [`docs/ideas/nanast-wasm-realtime-runner.md`](ideas/nanast-wasm-realtime-runner.md)
-  records the approved Wasm runner feasibility gate.
-- Current feature requirements:
-  [`docs/features/wasm-realtime-runner/requirements.md`](features/wasm-realtime-runner/requirements.md).
-- Evidence: [`docs/SPEC-v0.1.md`](SPEC-v0.1.md) at revision `a63b5ca` defines
-  the completed compiler vertical slice, its Wasm ABI, and its current scope
-  limits.
+- Authority and status: Sirius Wu approved this revision on 2026-09-06. It
+  selects rtForth over Wasm and Mecrisp, superseding the Wasm compiler target
+  established by the v0.1 baseline at `a63b5ca` and the Wasmtime runner
+  direction approved at commit `1501430`.
+- Historical implementation evidence: [`docs/SPEC-v0.1.md`](SPEC-v0.1.md),
+  [`tasks/plan.md`](../tasks/plan.md), and [`tasks/todo.md`](../tasks/todo.md)
+  record the completed Wasm vertical slice at revision `a63b5ca`; they are not
+  the current NanaST target specification.
+- Historical runner evidence: [`docs/ideas/nanast-wasm-realtime-runner.md`](ideas/nanast-wasm-realtime-runner.md)
+  and its feature artifacts are superseded and retained for history.
 - Evidence: Botnana Control revision `4ef5e97` uses `rtforth` in
   `motion/Cargo.toml` and documents a real-time Forth VM. This history supports
-  the migration need. It is not approval of this vision.
-- Open question: Select a permanent real-time execution engine only after the
-  ARM64 feasibility result is available.
+  the selected target; it does not establish a target contract or real-time
+  claim for generated ST programs.
+- Open questions: The emitted rtForth artifact format, supported rtForth
+  version and extension boundary, BNC host contract, lifecycle, and target
+  timing and memory acceptance evidence require a new approved feature
+  specification.
