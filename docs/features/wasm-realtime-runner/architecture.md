@@ -10,7 +10,7 @@ tags: [architecture, nanast, wasm, real-time]
 
 ## Superseded
 
-The approved rtForth vision superseded this Wasm/Wasmtime architecture on
+The approved Forth-2012 vision superseded this Wasm/Wasmtime architecture on
 2026-09-06. Retain it as historical design context; it does not authorize
 implementation or verification work. All remaining present-tense and imperative
 wording records the former design and is not current instruction.
@@ -145,7 +145,7 @@ Reject it for this experiment.
 
 ## Decision Status
 
-At acceptance, Sirius Wu selected Candidate A. The rtForth vision superseded
+At acceptance, Sirius Wu selected Candidate A. The Forth-2012 vision superseded
 that selection on 2026-09-06 before a feasibility result was recorded.
 
 Wasmtime is no longer an evaluated NanaST engine. Candidate B is historical and

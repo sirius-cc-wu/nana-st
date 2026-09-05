@@ -11,7 +11,7 @@ tags: [idea, nanast, wasm, real-time]
 ## Superseded
 
 Sirius Wu superseded this direction on 2026-09-06 by approving NanaST as an
-ST-to-rtForth compiler for BNC in [`docs/VISION.md`](../VISION.md). Retain this
+ST-to-Forth-2012 compiler for BNC in [`docs/VISION.md`](../VISION.md). Retain this
 artifact as history of the former Wasm direction; it does not authorize Wasm or
 Wasmtime implementation work. The remaining present-tense wording records the
 former direction. Its replacement premise is superseded by the current vision's

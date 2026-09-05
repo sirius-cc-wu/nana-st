@@ -12,7 +12,7 @@ tags: [design, rust, lifecycle, wasm, real-time]
 
 ## Superseded
 
-The approved rtForth vision superseded this proposed Wasm/Wasmtime lifecycle on
+The approved Forth-2012 vision superseded this proposed Wasm/Wasmtime lifecycle on
 2026-09-06. Retain it as historical design context; it does not authorize
 implementation or verification work. All remaining present-tense, imperative,
 and reconsideration wording records the former proposal and is not current

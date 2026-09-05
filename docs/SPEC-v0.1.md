@@ -3,7 +3,7 @@
 ## Status
 
 Superseded as NanaST's current target specification by the approved
-[rtForth vision](VISION.md) on 2026-09-06. This document records the completed
+[Forth-2012 vision](VISION.md) on 2026-09-06. This document records the completed
 Wasm v0.1 implementation and remains historical build and behavior evidence;
 the completed task list is [`tasks/todo.md`](../tasks/todo.md). It does not
 authorize future Wasm-target work. All remaining present-tense and normative

@@ -11,10 +11,10 @@ tags: [requirements, nanast, wasm, real-time]
 
 ## Superseded
 
-The approved rtForth vision superseded this Wasm/Wasmtime feasibility feature on
-2026-09-06. These requirements retain the former decision context and do not
-authorize implementation or verification work. rtForth target requirements must
-be specified separately. All remaining present-tense, normative, and
+The approved Forth-2012 vision superseded this Wasm/Wasmtime feasibility feature
+on 2026-09-06. These requirements retain the former decision context and do not
+authorize implementation or verification work. Forth-2012 target requirements
+must be specified separately. All remaining present-tense, normative, and
 item-level approval wording records the former experiment and is superseded.
 
 ## Historical Purpose and Scope

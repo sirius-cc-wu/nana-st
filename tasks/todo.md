@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed historical task list. It implements the former Wasm [`plan.md`](plan.md); the approved [rtForth vision](../docs/VISION.md) superseded that direction on 2026-09-06. All remaining directives record completed work and are not current instruction.
+Completed historical task list. It implements the former Wasm [`plan.md`](plan.md); the approved [Forth-2012 vision](../docs/VISION.md) superseded that direction on 2026-09-06. All remaining directives record completed work and are not current instruction.
 
 ## Dependency Order
 
