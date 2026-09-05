@@ -99,8 +99,9 @@ controller, result collector, or a load worker completing an operation.
    missed deadline.
 6. A scan error produces a local DTC report and stops the affected worker. The
    controller invalidates that run. It does not perform BNC safety behavior.
-7. At 90 C or higher, the thermal controller invalidates the run. The caller
-   supplies any adjusted load for a later run after cooling and restabilization.
+7. At 90 C or higher, the thermal controller invalidates the run. After
+   cooling and restabilization, the caller supplies an adjusted profile that
+   reduces normal-priority background load before reducing Wasm work.
 8. After all workers stop, the result collector evaluates the approved gates.
 
 ## Candidates and Trade-Offs

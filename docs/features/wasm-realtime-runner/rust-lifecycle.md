@@ -43,7 +43,7 @@ benchmark, not this lifecycle design, must establish real-time suitability.
 | Measure thermal state | `ThermalWorker` thread | Owns samples until its joined outcome returns. |
 | Apply normal-priority pressure | `LoadWorker` thread | Owns its core-local work loop. |
 | Join and preserve outcomes | `ActiveTrial` | Owns every `JoinHandle` and the platform-tuning guard. |
-| Select an adjusted rerun load | Caller | Supplies a new `TrialPlan`; the benchmark does not invent a reduction policy. |
+| Select an adjusted rerun load | Caller | Supplies a new `TrialPlan` with both load targets; reduces normal-priority background load before Wasm work. |
 
 ## Design Forces
 

@@ -30,6 +30,17 @@ Wasm work equal to 50 percent of its period. Normal-priority workers on the
 same cores continuously request 80 percent CPU load. Their achieved load is
 recorded because real-time execution preempts them.
 
+## Terminology
+
+- **`wasm_work_target`:** The requested share of each periodic interval for
+  Wasm scan work. Its baseline value is 50 percent. Scan duration is the
+  recorded observed measure; this target is not the observed duration.
+- **`background_load_request`:** The requested share of one pinned core for
+  its normal-priority background worker. Its baseline value is 80 percent.
+- **Achieved background load:** The observed normal-priority background load on
+  a core. It can be lower than `background_load_request` because periodic
+  real-time work preempts it.
+
 ## Quality Requirements
 
 The thresholds below are approved by Sirius Wu. No verification result exists
@@ -68,10 +79,12 @@ the periodic path.
   - Source and status: Sirius Wu, approved.
   - Verification: Inspect the harness calculation and retained measurement log.
 - **BC-THERMAL-LIMIT:** If CPU temperature reaches 90 C or higher, invalidate
-  the current run. Reduce test load, wait for the CPU to cool down, repeat
-  thermal stabilization, and rerun the full test. The record shall state the
-  adjusted load. A lower-load result does not demonstrate the original 50
-  percent Wasm load condition.
+  the current run. The caller shall reduce `background_load_request` before it
+  reduces `wasm_work_target`, wait for the CPU to cool down, repeat thermal
+  stabilization, and rerun the full test. The record shall state the adjusted
+  `wasm_work_target`, `background_load_request`, and achieved background load.
+  A rerun with either target below its original value does not demonstrate the
+  original 50-percent-Wasm and 80-percent-background-load condition.
   - Source and status: Sirius Wu, approved.
   - Verification: Retained temperature and load measurements.
 - **BC-THERMAL-STABILIZATION:** Sample CPU thermal-zone temperature once per
@@ -91,10 +104,12 @@ the periodic path.
   shall occur outside the periodic path.
   - Source and status: Approved vision at commit `1501430`.
   - Verification: Inspect the runner and trace the periodic path.
-- **BC-LOAD:** Each periodic Wasm workload shall target 50 percent of its
-  period, while remaining within the QR-PLC-RT or QR-MOTION-RT execution limit.
-  Normal-priority workers shall request 80 percent CPU load on the same cores,
-  and the test shall record scan duration and achieved background load.
+- **BC-LOAD:** The test configuration shall name the periodic Wasm target as
+  `wasm_work_target` and set it to 50 percent of each period while remaining
+  within the QR-PLC-RT or QR-MOTION-RT execution limit. It shall name the
+  normal-priority target as `background_load_request` and set it to 80 percent
+  CPU load on the same cores. The test shall record scan duration and achieved
+  background load.
   - Source and status: Sirius Wu, approved.
   - Verification: Inspect workload configuration and retained measurement log.
 - **BC-DURATION:** Run each baseline and runner configuration for one hour
