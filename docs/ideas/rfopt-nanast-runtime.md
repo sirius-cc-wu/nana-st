@@ -11,10 +11,10 @@ tags: [idea, nanast, rfopt, forth, bnc]
 ## Status
 
 Sirius Wu accepted this direction on 2026-09-06. The governing policy is the
-approved [NanaST vision](../VISION.md); active requirements are owned by the
-[rfopt Boolean Pass-Through Target](../features/rfopt-target/requirements.md).
-This artifact retains the considered direction and does not own evolving
-requirements.
+approved [NanaST vision](../VISION.md); active requirements and architecture
+are owned by the [rfopt Boolean Pass-Through Target](../features/rfopt-target/requirements.md)
+and its [architecture](../features/rfopt-target/architecture.md). This artifact
+retains the considered direction and does not own evolving requirements.
 
 ## Problem Statement
 

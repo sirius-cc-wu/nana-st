@@ -2,7 +2,7 @@
 type: "Feature Requirements"
 title: "Requirements: rfopt Boolean Pass-Through Target"
 description: "Draft requirements for the first NanaST Forth-subset artifact executed by rfopt."
-status: "draft"
+status: "proposed"
 tags: [requirements, nanast, rfopt, forth-2012, pass-through]
 ---
 
@@ -10,10 +10,11 @@ tags: [requirements, nanast, rfopt, forth-2012, pass-through]
 
 ## Status
 
-Draft for review. The approved [NanaST vision](../../VISION.md) selects rfopt
-as the sole planned runtime and this feature's Boolean pass-through case as its
-first compatibility gate. This artifact does not authorize implementation until
-its requirements and open source-loading boundary are approved.
+Proposed for review. The approved [NanaST vision](../../VISION.md) selects
+rfopt as the sole planned runtime and this feature's Boolean pass-through case
+as its first compatibility gate. Its in-process host boundary is approved in
+[architecture.md](architecture.md). This artifact does not authorize
+implementation until the proposed requirements receive approval.
 
 ## Objective
 
@@ -51,6 +52,19 @@ AArch64 is out of scope for this feature. A separate AArch64 target feature may
 start only after every acceptance item below passes on AMD64 Linux and the
 requirements are approved.
 
+## Host Execution Boundary
+
+rfopt provides the in-process host boundary for this feature. It loads the
+generated source from memory, resolves and invokes its public words, and
+exposes I/O cells only through opaque host handles. The NanaST AMD64 integration
+test links this API from the pinned rfopt submodule; it is not a CLI test and
+adds no Forth words.
+
+The host boundary must write the nonzero `-1` test value through a cell handle,
+not by parsing additional Forth source. rfopt owns runtime-unit evidence for
+this boundary; NanaST owns the pinned cross-repository pass-through gate. See
+[architecture.md](architecture.md) for the selected structure and failures.
+
 ## Target Contract
 
 ### Generated artifact
@@ -60,26 +74,21 @@ public words in the current Forth word list:
 
 | Word | Stack effect | Contract |
 |---|---|---|
-| `nana-input-0` | `( -- a-addr )` | A cell that the host writes before a scan. |
-| `nana-output-0` | `( -- a-addr )` | A cell from which the host reads the scan result. |
+| `nana-input-0` | `( -- a-addr )` | Defines the input cell. rfopt maps its Forth address to an opaque host-cell handle for host writes before a scan. |
+| `nana-output-0` | `( -- a-addr )` | Defines the output cell. rfopt maps its Forth address to an opaque host-cell handle for host reads after a scan. |
 | `nana-init` | `( -- )` | Clears generated outputs; it does not change input cells. This feature has no persistent `VAR` state. |
 | `nana-scan` | `( -- )` | Reads the input cell and writes the normalized Boolean result to the output cell. |
 
-The output must be observationally equivalent to:
+After normalizing whitespace, the generated source must have exactly this token
+sequence:
 
 ```forth
-VARIABLE nana-input-0
-VARIABLE nana-output-0
-
-: nana-init ( -- )
-  0 nana-output-0 ! ;
-
-: nana-scan ( -- )
-  nana-input-0 @ IF 1 ELSE 0 THEN nana-output-0 ! ;
+VARIABLE nana-input-0 VARIABLE nana-output-0 : nana-init 0 nana-output-0 ! ; : nana-scan nana-input-0 @ IF 1 ELSE 0 THEN nana-output-0 ! ;
 ```
 
-Formatting and private helper words are not part of the contract. The public
-names, stack effects, lifecycle, and observable Boolean behavior are.
+It defines exactly the two `VARIABLE` words and two `:` definitions named
+above. It contains no Forth comments, private helper definitions, or additional
+tokens. Whitespace is the only permitted formatting variation.
 
 ### Boolean behavior
 
@@ -115,25 +124,36 @@ supply a compatibility definition in generated source.
 
 ## Acceptance Evidence
 
-The first rfopt target test must load the generated artifact and prove all of
-the following on the rfopt revision pinned by NanaST's submodule:
+The first rfopt target test must prove all of the following on the rfopt
+revision pinned by NanaST's submodule:
 
-1. Executing `nana-input-0` and `nana-output-0` leaves usable cell addresses:
-   the host can store through the first and fetch through the second.
-2. Executing `nana-init` leaves no value and makes `nana-output-0 @` equal `0`.
-3. An input cell written with `0` before `nana-scan` produces output `0`.
-4. An input cell written with `1` before `nana-scan` produces output `1`.
-5. The selected host-cell API can write another nonzero value, including `-1`,
-   without requiring the generated artifact or test source to parse `-1`; a
-   later `nana-scan` produces output `1`.
-6. An input written before `nana-init` survives initialization and produces the
-   expected output after `nana-scan`.
-7. A missing required word or a Forth load/execute error fails the test with the
-   named word or source diagnostic; it must not be accepted as target support.
+1. Before Cargo compiles the rfopt path dependency, the checked-in
+   `scripts/run-rfopt-target.sh` gate runner verifies that the rfopt submodule
+   worktree is clean and that its `HEAD` object ID equals the `rfopt` gitlink
+   object ID in the tested NanaST commit. A mismatch fails the gate before
+   runtime execution; direct `cargo test` is not target-gate evidence.
+2. The generated source has exactly the required token sequence above.
+3. rfopt loads the source, resolves both `VARIABLE` words to opaque host-cell
+   handles, and resolves both lifecycle words to executable handles.
+4. Invoking `nana-init` completes with no returned value; reading the output
+   through its opaque host-cell handle returns `0`.
+5. Writing `0` through the input handle before `nana-scan` produces output `0`
+   through the output handle.
+6. Writing `1` through the input handle before `nana-scan` produces output `1`
+   through the output handle.
+7. The host-cell API can write another nonzero value, including `-1`, without
+   requiring the generated artifact or test source to parse `-1`; a later
+   `nana-scan` produces output `1` through the output handle.
+8. In a fresh runtime instance, writing `1` through the input handle before
+   `nana-init`, then invoking `nana-init` and `nana-scan`, produces output `1`.
+   This proves initialization preserves input cells.
+9. A missing required word or an induced Forth load, lookup, or handle error
+   fails the test with named word or source context; it must not be accepted as
+   target support.
 
 The test must run on the AMD64 Linux development host from a NanaST checkout
-with the rfopt submodule initialized. It must not require SwiftForth, rtForth,
-BNC hardware, or BNC software.
+with the rfopt submodule initialized and validated as above. It must not
+require SwiftForth, rtForth, BNC hardware, or BNC software.
 
 ## Boundaries
 
@@ -164,11 +184,9 @@ BNC hardware, or BNC software.
 
 ## Open Questions
 
-- What rfopt source-loading and host-cell API will load the generated source,
-  invoke public words, and inject the nonzero `-1` test value?
-- What AMD64 rfopt executor runs the target test, and what stable command
-  invokes it from the NanaST checkout?
-- Where should the cross-repository target test live?
+- What Rust types and error model implement rfopt's approved opaque host API?
+- What exact rfopt invocation does `scripts/run-rfopt-target.sh` use after its
+  pre-compilation checks?
 - Which rfopt revision first satisfies the inventory and pass-through gate?
 - What named BNC control case and measurable target conditions justify the
   later rfopt real-time evidence feature?

@@ -151,7 +151,7 @@ retains ownership of BNC integration and control policy.
   the current NanaST target specification.
 - Historical runner evidence: [`docs/ideas/nanast-wasm-realtime-runner.md`](ideas/nanast-wasm-realtime-runner.md)
   and its feature artifacts are superseded and retained for history.
-- Open questions: The AMD64 rfopt source-loading and host API, exact generated
-  artifact format, approval of the Boolean pass-through inventory and
+- Open questions: The AMD64 rfopt host API's detailed Rust realization, exact
+  generated artifact format, approval of the Boolean pass-through inventory and
   lifecycle, and real-time timing and memory acceptance evidence require an
   approved rfopt target feature specification.
