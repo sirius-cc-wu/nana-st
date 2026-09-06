@@ -39,8 +39,8 @@ artifact. rfopt real-time evidence is required for any later real-time claim.
 
 - [ ] rfopt can implement the first required-word inventory and a source-loading
   boundary sufficient to execute the pass-through artifact.
-- [ ] The pass-through result can be tested from a NanaST checkout with the
-  pinned rfopt submodule.
+- [ ] The pass-through result can be tested on the AMD64 Linux development host
+  from a NanaST checkout with the pinned rfopt submodule.
 - [ ] Later rfopt evidence can establish the BNC-relevant runtime properties
   without placing BNC integration in NanaST.
 - [ ] BNC can assess and own a later incremental migration from rtForth to
@@ -50,8 +50,10 @@ artifact. rfopt real-time evidence is required for any later real-time claim.
 
 - Add the rfopt submodule.
 - Specify and generate the Boolean pass-through Forth artifact.
-- Implement the required subset in rfopt.
-- Run the artifact on rfopt and retain compatibility evidence.
+- Implement the required subset in rfopt on AMD64 Linux.
+- Run the artifact on rfopt and retain AMD64 compatibility evidence.
+
+AArch64 target work begins only after the AMD64 NanaST target gate passes.
 
 ## Not Doing
 
@@ -59,6 +61,7 @@ artifact. rfopt real-time evidence is required for any later real-time claim.
   adoption harder.
 - **Full Forth-2012:** rfopt only needs the inventory that NanaST requires.
 - **SwiftForth or rtForth target support:** rfopt is the sole planned runtime.
+- **AArch64 target work:** It waits until the AMD64 NanaST target gate passes.
 - **Real-time claim:** The compatibility gate alone is not timing, memory, or
   safety evidence.
 - **BNC integration or migration:** BNC owns that later work.

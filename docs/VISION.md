@@ -38,6 +38,9 @@ retains ownership of BNC integration and control policy.
   loading and executing the generated Boolean pass-through artifact. rfopt
   becomes the sole target only if later evidence establishes that it satisfies
   BNC's needs.
+- **AMD64 before AArch64:** The first rfopt NanaST target runs on the AMD64
+  Linux development host. Do not begin AArch64 target work until rfopt passes
+  the approved AMD64 NanaST target gate.
 - **Migration is incremental:** Keep existing BNC Forth programs working while
   ST-generated rfopt artifacts gain equivalent, verified control cases. Do not
   require an all-at-once migration.
@@ -124,9 +127,10 @@ retains ownership of BNC integration and control policy.
 
 - Authority and status: Sirius Wu approved this revision on 2026-09-06. It
   selects rfopt as NanaST's sole planned runtime, subject to evidence that it
-  satisfies BNC's needs; it requires rfopt for real-time target evidence; and
-  it selects an explicit Forth-2012 subset rather than full runtime
-  conformance. It supersedes the earlier SwiftForth-first and rtForth-specific
+  satisfies BNC's needs; it requires rfopt for real-time target evidence;
+  selects AMD64 Linux before AArch64 for the NanaST target; and selects an
+  explicit Forth-2012 subset rather than full runtime conformance. It
+  supersedes the earlier SwiftForth-first and rtForth-specific
   target selections, while continuing to supersede the Wasm compiler target
   established by the v0.1 baseline at `a63b5ca` and the Wasmtime runner
   direction approved at commit `1501430`.
@@ -147,7 +151,7 @@ retains ownership of BNC integration and control policy.
   the current NanaST target specification.
 - Historical runner evidence: [`docs/ideas/nanast-wasm-realtime-runner.md`](ideas/nanast-wasm-realtime-runner.md)
   and its feature artifacts are superseded and retained for history.
-- Open questions: The rfopt source-loading and host API, exact generated
+- Open questions: The AMD64 rfopt source-loading and host API, exact generated
   artifact format, approval of the Boolean pass-through inventory and
   lifecycle, and real-time timing and memory acceptance evidence require an
   approved rfopt target feature specification.

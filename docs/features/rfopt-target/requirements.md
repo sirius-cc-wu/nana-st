@@ -37,6 +37,20 @@ output := input;
 END_PROGRAM
 ```
 
+## Target Platform and Promotion Gate
+
+The first target is the AMD64 Linux development host. rfopt must build and run
+the generated artifact there before NanaST begins any AArch64 target work.
+
+The current pinned rfopt revision does not build on this host because
+`src/rforth.rs` imports AArch64-only `slow` code and uses the AArch64 `x9`
+register. Restoring an AMD64 build is rfopt prerequisite work; its failure is
+not compatibility evidence.
+
+AArch64 is out of scope for this feature. A separate AArch64 target feature may
+start only after every acceptance item below passes on AMD64 Linux and the
+requirements are approved.
+
 ## Target Contract
 
 ### Generated artifact
@@ -117,9 +131,9 @@ the following on the rfopt revision pinned by NanaST's submodule:
 7. A missing required word or a Forth load/execute error fails the test with the
    named word or source diagnostic; it must not be accepted as target support.
 
-After the target CPU, operating system, and executor are selected, the test
-must run from a NanaST checkout with the rfopt submodule initialized. It must
-not require SwiftForth, rtForth, BNC hardware, or BNC software.
+The test must run on the AMD64 Linux development host from a NanaST checkout
+with the rfopt submodule initialized. It must not require SwiftForth, rtForth,
+BNC hardware, or BNC software.
 
 ## Boundaries
 
@@ -139,6 +153,7 @@ not require SwiftForth, rtForth, BNC hardware, or BNC software.
 - Changing the public names, stack effects, Boolean representation, or
   initialization behavior.
 - Claiming real-time, memory, safety, or BNC integration behavior.
+- Beginning AArch64 target work before the AMD64 acceptance gate passes.
 
 ### Never
 
@@ -151,12 +166,9 @@ not require SwiftForth, rtForth, BNC hardware, or BNC software.
 
 - What rfopt source-loading and host-cell API will load the generated source,
   invoke public words, and inject the nonzero `-1` test value?
-- Which CPU architecture, operating system, and executor own the first target
-  test? The current rfopt revision does not build on this x86_64 host:
-  `src/rforth.rs` imports AArch64-only `slow` code and uses the AArch64 `x9`
-  register.
-- Where should the cross-repository target test live, and what stable command
-  runs it on that selected target?
+- What AMD64 rfopt executor runs the target test, and what stable command
+  invokes it from the NanaST checkout?
+- Where should the cross-repository target test live?
 - Which rfopt revision first satisfies the inventory and pass-through gate?
 - What named BNC control case and measurable target conditions justify the
   later rfopt real-time evidence feature?
