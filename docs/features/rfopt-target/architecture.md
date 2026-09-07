@@ -97,10 +97,10 @@ To verify this gate, the project requires the following test evidence:
 - **Error-handling tests:** Prove that missing words, invalid handles, and syntax/lookup errors fail with clear diagnostics.
 
 > [!NOTE]
-> This evidence cannot be gathered yet because the pinned rfopt revision does not currently build on AMD64. Once tests pass, they prove basic compatibility only. They do not prove real-time timing, memory limits, safety properties, BNC integration, or AArch64 support.
+> The pinned rfopt revision now builds on AMD64, but it does not yet provide the source-loading and opaque host-cell API required for this gate. Once tests pass, they prove basic compatibility only. They do not prove real-time timing, memory limits, safety properties, BNC integration, or AArch64 support.
 
 ## Detailed-Design Handoffs
 
-- **rfopt Rust API:** Specify opaque handle ownership, error enums, runtime creation, source parsing, and invalid-handle behavior.
+- **rfopt Rust API:** [rust-lifecycle.md](rust-lifecycle.md) proposes opaque handle ownership, error enums, runtime creation, source parsing, native-code lifetime, and invalid-handle behavior. Sirius Wu must approve that lifecycle design before implementation begins.
 - **NanaST test integration:** Add a path development dependency on the pinned rfopt submodule, implement `scripts/run-rfopt-target.sh`, and write the AMD64 integration test once the API is exposed.
-- **rfopt AMD64 implementation:** Fix existing architecture-specific build issues before running tests.
+- **rfopt AMD64 implementation:** After lifecycle-design approval, implement the source loader, native emitter, opaque host API, and rfopt unit tests.

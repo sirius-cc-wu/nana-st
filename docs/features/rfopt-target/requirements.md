@@ -39,7 +39,7 @@ END_PROGRAM
 
 The initial target platform is the AMD64 Linux development host. rfopt must build and run the generated Forth code on AMD64 before NanaST begins any AArch64 work.
 
-The currently pinned rfopt revision does not build on AMD64 Linux because `src/rforth.rs` imports AArch64-only `slow` code and references the AArch64 `x9` register. Fixing the AMD64 build is prerequisite work within rfopt; a build failure is not valid compatibility evidence.
+The pinned rfopt revision `f8079fc` satisfies the AMD64 build prerequisite. It compiles AArch64-only code conditionally and makes the retained AArch64 example opt-in. A build failure is not valid compatibility evidence; rfopt must continue to build on AMD64 Linux while this feature is implemented.
 
 AArch64 is out of scope for this feature. Work on an AArch64 target may start only after all acceptance criteria below pass on AMD64 Linux and the requirements are approved.
 
@@ -141,7 +141,7 @@ The test must run on an AMD64 Linux development host with the rfopt submodule in
 
 ## Open Questions
 
-- What Rust types and error structures will implement rfopt's opaque host API?
+- Will Sirius Wu approve the proposed Rust types, ownership model, and error structures in [rust-lifecycle.md](rust-lifecycle.md) for rfopt's opaque host API?
 - What exact command does `scripts/run-rfopt-target.sh` run after completing its pre-compilation checks?
 - Which rfopt commit will be the first to satisfy the word inventory and pass the gate?
 - Which real-world BNC control program will be used to define the subsequent real-time verification feature?
