@@ -1,11 +1,11 @@
 ---
 type: "Rust Lifecycle Design"
 title: "Rust Lifecycle Design: rfopt AMD64 Host API"
-description: "Proposed ownership, native-code lifetime, opaque handles, and error behavior for the first rfopt host API."
+description: "Accepted ownership, native-code lifetime, opaque handles, and error behavior for the first rfopt host API."
 id: "rfopt-amd64-host-api-lifecycle"
 status: "accepted"
 language: "rust"
-revision: "NanaST a625c6a; rfopt f8079fc"
+revision: "rfopt 849cc2a"
 tags: [design, rust, lifecycle, rfopt, amd64, forth]
 ---
 
@@ -212,7 +212,7 @@ does not invoke generated code, block, or report a cleanup result.
 ## Rust Type and API Sketch
 
 ```rust
-// Proposed API shape; not an as-built declaration.
+// API summary for rfopt 849cc2a; src/host/mod.rs is the canonical declaration.
 
 pub mod host {
     pub type Cell = isize;
@@ -254,6 +254,8 @@ pub mod host {
         DuplicateName { name: String },
         MalformedVariable,
         UnbalancedControl,
+        ControlNestingLimit { limit: usize },
+        DataStackLimit { limit: usize },
         StackEffect { word: String, detail: String },
         NativeEmission { word: String, operation: String, detail: String },
     }
@@ -371,8 +373,8 @@ replacing this model.
   errors include a source location.
 - **Source-boundary tests:** Reject unsupported literals such as `-1` and `2`,
   unknown words, tokens outside a supported form, malformed `VARIABLE` forms,
-  duplicate or reserved names, and misplaced, missing, or unbalanced `IF`,
-  `ELSE`, and `THEN` forms.
+  duplicate or reserved names, unsafe control nesting or data-stack depth, and
+  misplaced, missing, or unbalanced `IF`, `ELSE`, and `THEN` forms.
 - **Focused host API tests:** Verify missing names report the requested name;
   the exact source resolves both cell handles and both word handles; and cloned
   handles access the same private cell.
@@ -389,22 +391,23 @@ replacing this model.
   register preservation, unchanged `%rsp`, and a clear direction flag. Private
   emitter tests verify finalized allocations are read-execute and execute a
   validated instruction sequence without a Rust or interpreter fallback.
-- **Integration:** The NanaST gate later compiles `pass_through.st`, verifies
+- **Integration:** `tests/rfopt_target.rs` compiles `pass_through.st`, verifies
   the exact source tokens, and repeats the host API sequence through the
-  pinned submodule.
+  pinned submodule. `scripts/run-rfopt-target.sh` performs the required
+  submodule checks before it runs that test.
 - **Human-owned validation:** No hardware, real-time, memory-bound, BNC, or
   AArch64 claim is validated by these tests.
 
 ## Completion Boundary
 
-- **Result:** This accepted design authorizes rfopt implementation. It does not
-  complete the AMD64 pass-through target.
-- **Evidence:** The design specifies ownership, invalid-handle behavior,
-  failure atomicity, native code lifetime, the API shape, ABI obligations, and
-  unit-test obligations for the approved source subset.
-- **Remaining vertical gap:** rfopt must implement and test the host API.
-  NanaST must then emit the source, add the gitlink runner, and prove the full
-  integration gate.
+- **Result:** rfopt implements the accepted host API in commit `849cc2a`.
+  NanaST emits the source and runs the AMD64 integration gate through the
+  pinned submodule.
+- **Evidence:** The runtime unit tests cover ownership, diagnostics, load
+  atomicity, native-code lifetime, and the entry ABI. The NanaST gate verifies
+  the generated source and end-to-end Boolean behavior.
+- **Limit:** This evidence does not establish real-time timing, memory bounds,
+  BNC integration, safety certification, or AArch64 support.
 
 ## Deferred Abstractions
 
@@ -423,4 +426,4 @@ replacing this model.
 - [Architecture: rfopt AMD64 Pass-Through Gate](architecture.md)
 - [NanaST vision](../../VISION.md)
 - [rfopt vision](../../../rfopt/VISION.md)
-- rfopt commit `f8079fc` (`fix: enable AMD64 preflight builds`)
+- rfopt commit `849cc2a` (`feat: add AMD64 opaque host runtime`)

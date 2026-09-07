@@ -97,10 +97,18 @@ To verify this gate, the project requires the following test evidence:
 - **Error-handling tests:** Prove that missing words, invalid handles, and syntax/lookup errors fail with clear diagnostics.
 
 > [!NOTE]
-> The pinned rfopt revision now builds on AMD64, but it does not yet provide the source-loading and opaque host-cell API required for this gate. Once tests pass, they prove basic compatibility only. They do not prove real-time timing, memory limits, safety properties, BNC integration, or AArch64 support.
+> rfopt commit `849cc2a` provides the AMD64 source-loading and opaque host-cell
+> API for this gate. Passing this gate proves basic compatibility only. It does
+> not prove real-time timing, memory limits, safety properties, BNC integration,
+> or AArch64 support.
 
-## Detailed-Design Handoffs
+## Implementation
 
-- **rfopt Rust API:** The accepted [rust-lifecycle.md](rust-lifecycle.md) defines opaque handle ownership, error enums, runtime creation, source parsing, native-code lifetime, and invalid-handle behavior.
-- **NanaST test integration:** Add a path development dependency on the pinned rfopt submodule, implement `scripts/run-rfopt-target.sh`, and write the AMD64 integration test once the API is exposed.
-- **rfopt AMD64 implementation:** Implement the source loader, native emitter, opaque host API, and rfopt unit tests from the accepted lifecycle design.
+- **rfopt Rust API:** The accepted [rust-lifecycle.md](rust-lifecycle.md)
+  defines opaque handle ownership, error enums, runtime creation, source
+  parsing, native-code lifetime, and invalid-handle behavior. rfopt implements
+  this API and its AMD64 unit tests in commit `849cc2a`.
+- **NanaST source and gate:** `src/forth.rs` emits the exact Boolean
+  pass-through source. `tests/rfopt_target.rs` executes the full integration
+  sequence. `scripts/run-rfopt-target.sh` validates the submodule before it
+  starts Cargo.

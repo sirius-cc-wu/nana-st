@@ -39,7 +39,7 @@ END_PROGRAM
 
 The initial target platform is the AMD64 Linux development host. rfopt must build and run the generated Forth code on AMD64 before NanaST begins any AArch64 work.
 
-The pinned rfopt revision `f8079fc` satisfies the AMD64 build prerequisite. It compiles AArch64-only code conditionally and makes the retained AArch64 example opt-in. A build failure is not valid compatibility evidence; rfopt must continue to build on AMD64 Linux while this feature is implemented.
+The pinned rfopt revision `849cc2a` satisfies the AMD64 runtime prerequisite. It includes the AMD64 preflight repair from `f8079fc`, compiles AArch64-only code conditionally, and makes the retained AArch64 example opt-in. A build failure is not valid compatibility evidence; rfopt must continue to build on AMD64 Linux while this feature is implemented.
 
 AArch64 is out of scope for this feature. Work on an AArch64 target may start only after all acceptance criteria below pass on AMD64 Linux and the requirements are approved.
 
@@ -139,9 +139,17 @@ The test must run on an AMD64 Linux development host with the rfopt submodule in
 - Add BNC device mappings, hardware I/O, scheduling, or control policies into NanaST.
 - Treat passing this compatibility test as proof of real-time performance.
 
+## Implementation Evidence
+
+- rfopt commit `849cc2a` implements the AMD64 Linux source loader, native
+  emitter, and opaque host API defined in [rust-lifecycle.md](rust-lifecycle.md).
+- `scripts/run-rfopt-target.sh` checks the initialized rfopt submodule, its
+  clean worktree, and its `HEAD` against the NanaST gitlink. It then runs
+  `cargo test --locked --test rfopt_target`.
+- `tests/rfopt_target.rs` compiles the fixture, checks the exact source token
+  sequence, and verifies every acceptance case through the pinned submodule.
+
 ## Open Questions
 
-- The accepted Rust types, ownership model, and error structures for rfopt's opaque host API are in [rust-lifecycle.md](rust-lifecycle.md).
-- What exact command does `scripts/run-rfopt-target.sh` run after completing its pre-compilation checks?
-- Which rfopt commit will be the first to satisfy the word inventory and pass the gate?
-- Which real-world BNC control program will be used to define the subsequent real-time verification feature?
+- Which real-world BNC control program will define the next real-time
+  verification feature?
