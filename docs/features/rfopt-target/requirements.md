@@ -2,7 +2,7 @@
 type: "Feature Requirements"
 title: "Requirements: rfopt Boolean Pass-Through Target"
 description: "Requirements for the first NanaST Forth-subset artifact executed by rfopt."
-status: "proposed"
+status: "approved"
 tags: [requirements, nanast, rfopt, forth-2012, pass-through]
 ---
 
@@ -10,11 +10,11 @@ tags: [requirements, nanast, rfopt, forth-2012, pass-through]
 
 ## Status
 
-Proposed for review. 
+Sirius Wu approved these requirements on 2026-09-06.
 
-The approved [NanaST vision](../../VISION.md) selects `rfopt` as the sole planned runtime. It also establishes this Boolean pass-through feature as the first compatibility gate. The in-process host boundary is approved in [architecture.md](architecture.md). 
+The approved [NanaST vision](../../VISION.md) selects `rfopt` as the sole planned runtime. It also establishes this Boolean pass-through feature as the first compatibility gate. The in-process host boundary is approved in [architecture.md](architecture.md).
 
-Implementation may begin only after these requirements receive formal approval.
+Implementation may begin within these requirements and the approved architecture.
 
 ## Objective
 
