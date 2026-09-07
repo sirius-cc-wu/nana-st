@@ -9,155 +9,73 @@ tags: [requirements, nanast, wasm, real-time]
 
 # Requirements: NanaST Wasm Real-Time Runner Feasibility
 
-## Superseded
+## Status
 
-The approved Forth-2012 vision superseded this Wasm/Wasmtime feasibility feature
-on 2026-09-06. These requirements retain the former decision context and do not
-authorize implementation or verification work. Forth-2012 target requirements
-must be specified separately. All remaining present-tense, normative, and
-item-level approval wording records the former experiment and is superseded.
+**Superseded.** The approved [Forth-2012 vision](../../VISION.md) replaced this Wasm feasibility feature on 2026-09-06. 
+
+This document records the requirements and test thresholds defined for that earlier experiment. It does not authorize current implementation or verification work. Requirements for Forth-2012 targets are specified separately.
 
 ## Historical Purpose and Scope
 
-This former feature was intended to establish whether a prepared Wasm runner
-could meet real-time timing limits before BNC integration began. The feasibility
-test was a NanaST responsibility. It did not integrate with BNC, EtherCAT,
-DoIP, UDS, DIDs, or a `vcmd` mapping, and used fake `INT` host inputs and
-outputs.
+This feature evaluated whether a prepared WebAssembly runner could meet real-time timing limits before connecting to BNC hardware. The benchmark was designed as an isolated NanaST test:
+- Did not integrate with BNC, EtherCAT, DoIP, UDS, DIDs, or `vcmd` commands.
+- Used mock `INT` inputs and outputs to test the runner in isolation.
+- Targeted a LubanCAT 1N board equipped with an RK3566 ARM64 CPU running Linux PREEMPT_RT. AMD64 testing was deferred until ARM64 succeeded.
 
-The first target is a LubanCAT 1N with an RK3566 ARM64 CPU. Linux PREEMPT_RT is
-the test environment. AMD64 is deferred until ARM64 succeeds.
-
-The harness adapts `rt-tests-rs`. It prepares and warms a Wasmtime module
-outside the periodic path. Each periodic scan calls `nana_scan` on one
-independent module instance. One module instance does not scan concurrently on
-more than one core. Multiple independent instances can run on separate pinned
-real-time threads.
-
-The test uses four independent instances, one per core. Each instance targets
-Wasm work equal to 50 percent of its period. Normal-priority workers on the
-same cores continuously request 80 percent CPU load. Their achieved load is
-recorded because real-time execution preempts them.
+The test harness was adapted from `rt-tests-rs`. It compiled, instantiated, and warmed a Wasmtime module before periodic execution began:
+- Each periodic thread ran `nana_scan` on its own dedicated module instance.
+- Module instances were not shared across CPU cores.
+- The test ran four independent instances simultaneously across four CPU cores.
+- Each instance targeted Wasm execution work taking 50% of its period.
+- Normal-priority background threads requested 80% CPU load on the same cores to simulate background contention.
 
 ## Terminology
 
-- **`wasm_work_target`:** The requested share of each periodic interval for
-  Wasm scan work. Its baseline value is 50 percent. Scan duration is the
-  recorded observed measure; this target is not the observed duration.
-- **`background_load_request`:** The requested share of one pinned core for
-  its normal-priority background worker. Its baseline value is 80 percent.
-- **Achieved background load:** The observed normal-priority background load on
-  a core. It can be lower than `background_load_request` because periodic
-  real-time work preempts it.
+- **`wasm_work_target`:** The intended portion of each period dedicated to Wasm execution (baseline: 50%). Actual measured scan duration is tracked separately.
+- **`background_load_request`:** The requested CPU load for the normal-priority background worker on each core (baseline: 80%).
+- **Achieved background load:** The actual measured background CPU utilization. This is typically lower than requested because real-time threads preempt background work.
 
 ## Historical Quality Requirements
 
-At acceptance, Sirius Wu approved the thresholds below. No verification
-result was recorded. Each historical requirement applied after the module was
-prepared and warmed outside the periodic path.
+Sirius Wu approved the following requirements for the benchmark. No experimental run was completed before this direction was superseded.
 
-- **QR-PLC-RT:** Given the PLC runner runs on the ARM64 target under the stated
-  test conditions, it shall complete every scan within 5 ms and remain within
-  a 1 ms maximum absolute wake-up deviation at a 10 ms period. It shall not
-  miss a deadline.
-  - Source and status: Sirius Wu, approved.
-  - Affected boundary: NanaST real-time runner feasibility.
-  - Verification: One-hour target run after thermal stabilization.
-- **QR-MOTION-RT:** Given the motion runner runs on the ARM64 target under the
-  stated test conditions, it shall complete every scan within 500 us and remain
-  within a 100 us maximum absolute wake-up deviation at a 1 ms period. It shall
-  not miss a deadline.
-  - Source and status: Sirius Wu, approved.
-  - Affected boundary: NanaST real-time runner feasibility.
-  - Verification: One-hour target run after thermal stabilization.
-- **QR-THERMAL-EVIDENCE:** The verification run shall record CPU temperature,
-  frequency or governor, throttling events, ambient temperature, and cooling or
-  enclosure configuration. CPU temperature shall remain below 90 C for the
-  complete one-hour measurement. A thermal throttle makes the result failed or
-  inconclusive unless the timing limits remain satisfied in the throttled
-  steady state.
-  - Source and status: Sirius Wu, approved.
-  - Affected boundary: Target verification evidence.
-  - Verification: Retained measurement log and operator review.
+- **QR-PLC-RT (PLC Timing):** Under standard test conditions on the ARM64 target, every PLC scan must complete within 5 ms at a 10 ms period. The maximum absolute wake-up jitter must remain below 1 ms. No deadlines may be missed.
+  - *Verification:* One-hour test run after thermal stabilization.
+- **QR-MOTION-RT (Motion Timing):** Under standard test conditions on the ARM64 target, every motion scan must complete within 500 µs at a 1 ms period. The maximum absolute wake-up jitter must remain below 100 µs. No deadlines may be missed.
+  - *Verification:* One-hour test run after thermal stabilization.
+- **QR-THERMAL-EVIDENCE (Thermal Monitoring):** The test harness must record CPU temperature, CPU governor/frequency, throttling events, ambient temperature, and cooling configuration. CPU temperature must remain below 90°C throughout the full one-hour run. Any thermal throttling invalidates the test unless all timing requirements are still met.
+  - *Verification:* Review of retained measurement logs.
 
 ## Historical Binding Constraints
 
-- **BC-JITTER-MEASURE:** The harness shall calculate maximum absolute wake-up
-  deviation as `max(abs(min_jitter), abs(max_jitter))`. It shall not use only
-  the existing signed `Max` value from `rt-tests-rs`.
-  - Source and status: Sirius Wu, approved.
-  - Verification: Inspect the harness calculation and retained measurement log.
-- **BC-THERMAL-LIMIT:** If CPU temperature reaches 90 C or higher, invalidate
-  the current run. The caller shall reduce `background_load_request` before it
-  reduces `wasm_work_target`, wait for the CPU to cool down, repeat thermal
-  stabilization, and rerun the full test. The record shall state the adjusted
-  `wasm_work_target`, `background_load_request`, and achieved background load.
-  A rerun with either target below its original value does not demonstrate the
-  original 50-percent-Wasm and 80-percent-background-load condition.
-  - Source and status: Sirius Wu, approved.
-  - Verification: Retained temperature and load measurements.
-- **BC-THERMAL-STABILIZATION:** Sample CPU thermal-zone temperature once per
-  second. Discard warm-up measurements. Start the one-hour measurement only
-  after the preceding ten minutes have a temperature range of 2 C or less, no
-  thermal-throttling event, and a CPU temperature below 90 C.
-  - Source and status: Sirius Wu, approved.
-  - Verification: Retained temperature and throttling measurement log.
-- **BC-TARGET:** The first feasibility target is a LubanCAT 1N with an RK3566
-  ARM64 CPU. AMD64 is deferred until ARM64 succeeds.
-  - Source and status: Sirius Wu, approved.
-  - Verification: Inspect target hardware and retained test record.
-- **BC-ENVIRONMENT:** The feasibility test shall run on Linux PREEMPT_RT.
-  - Source and status: Sirius Wu, approved.
-  - Verification: Inspect the target kernel and retained test record.
-- **BC-PERIODIC-PATH:** Module compilation, loading, preparation, and warming
-  shall occur outside the periodic path.
-  - Source and status: Approved vision at commit `1501430`.
-  - Verification: Inspect the runner and trace the periodic path.
-- **BC-LOAD:** The test configuration shall name the periodic Wasm target as
-  `wasm_work_target` and set it to 50 percent of each period while remaining
-  within the QR-PLC-RT or QR-MOTION-RT execution limit. It shall name the
-  normal-priority target as `background_load_request` and set it to 80 percent
-  CPU load on the same cores. The test shall record scan duration and achieved
-  background load.
-  - Source and status: Sirius Wu, approved.
-  - Verification: Inspect workload configuration and retained measurement log.
-- **BC-DURATION:** Run each baseline and runner configuration for one hour
-  after thermal stabilization.
-  - Source and status: Sirius Wu, approved.
-  - Verification: Retained measurement log and operator review.
+- **BC-JITTER-MEASURE:** The harness must calculate maximum absolute wake-up deviation as `max(abs(min_jitter), abs(max_jitter))`, rather than using only the signed `Max` value from `rt-tests-rs`.
+- **BC-THERMAL-LIMIT:** If the CPU temperature reaches 90°C or higher, the test run is invalidated. To rerun:
+  1. Reduce `background_load_request` before reducing `wasm_work_target`.
+  2. Allow the hardware to cool down.
+  3. Repeat thermal stabilization, then restart the one-hour test.
+  4. Record the adjusted targets and achieved loads in the final report.
+- **BC-THERMAL-STABILIZATION:** Sample CPU temperatures once per second. The one-hour measurement begins only after the CPU maintains a temperature variation of 2°C or less over a 10-minute window, with no throttling and temperatures below 90°C.
+- **BC-TARGET:** The test target is a LubanCAT 1N with an RK3566 ARM64 CPU. Testing on AMD64 is deferred until ARM64 passes.
+- **BC-ENVIRONMENT:** Tests must execute on a Linux kernel with PREEMPT_RT patches.
+- **BC-PERIODIC-PATH:** All module compilation, loading, linking, and warm-up must happen outside the periodic real-time scan path.
+- **BC-LOAD:** The benchmark sets `wasm_work_target` to 50% of the period and `background_load_request` to 80% background CPU load on each core. Both scan duration and achieved background load must be recorded.
+- **BC-DURATION:** Run each test configuration for one continuous hour after thermal stabilization.
 
-## Historical Delegated Benchmark Definition
+## Historical Failure Handling
 
-The runner feasibility work may define a synthetic, bounded benchmark that
-represents the 50 percent scan load. This authority is delegated by Sirius Wu.
-A trivial pass-through module does not prove the 50 percent condition.
-
-## Historical Failure Reporting Boundary
-
-The harness converts a Wasm execution failure into a diagnostic trouble code
-(DTC) report and stops the affected test scan cleanly. For example, a
-non-constant zero divisor could make the former Wasm signed division trap. The
-harness would verify the DTC report. BNC owns DTC persistence, publication,
-DoIP/UDS handling, and any control safety response.
+The harness converts any Wasm execution trap into a Diagnostic Trouble Code (DTC) and stops the affected scan safely. For example, a dynamic divide-by-zero error in Wasm produces a DTC. BNC is responsible for storing, reporting, and acting on DTCs in production.
 
 ## Historical Decision Gate
 
-- If the PLC gate had passed, the former direction would have continued with a
-  BNC PLC runner.
-- If the motion gate had also passed, it would have continued with motion-loop
-  integration for the EDM orbit-velocity case.
-- If motion had failed while PLC passed, it would have retained PLC scope and
-  deferred motion-loop execution.
-- If PLC had failed, it would not have integrated Wasmtime as the BNC runner;
-  it would have evaluated a native execution backend without reverting ST
-  programs to rtForth.
+If this feasibility test had been executed:
+- Passing the PLC gate would have led to a prototype BNC PLC runner.
+- Passing both PLC and motion gates would have led to testing motion-loop control.
+- Passing PLC but failing motion would have kept PLC scope and dropped motion work.
+- Failing PLC would have eliminated Wasmtime as a candidate engine in favor of a native code generator.
 
 ## Traceability
 
-- Historical candidate direction:
-  [`docs/ideas/nanast-wasm-realtime-runner.md`](../../ideas/nanast-wasm-realtime-runner.md)
-  was approved at `1501430`; its constraints were revised at `5633aa2` and
-  organized as this feature at `612c003`.
-- Former vision approval: [`docs/VISION.md`](../../VISION.md), commit `1501430`.
-- Former compiler ABI: [`docs/SPEC-v0.1.md`](../../SPEC-v0.1.md), commit `a63b5ca`.
-- Historical feature architecture: [`architecture.md`](architecture.md).
+- Candidate direction: [`docs/ideas/nanast-wasm-realtime-runner.md`](../../ideas/nanast-wasm-realtime-runner.md)
+- Former vision approval: [`docs/VISION.md`](../../VISION.md) (commit `1501430`)
+- Historical compiler specification: [`docs/SPEC-v0.1.md`](../../SPEC-v0.1.md)
+- Feature architecture: [`architecture.md`](architecture.md)

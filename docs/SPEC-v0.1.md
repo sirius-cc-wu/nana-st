@@ -2,95 +2,108 @@
 
 ## Status
 
-Superseded as NanaST's current target specification by the approved
-[Forth-2012 vision](VISION.md) on 2026-09-06. This document records the completed
-Wasm v0.1 implementation and remains historical build and behavior evidence;
-the completed task list is [`tasks/todo.md`](../tasks/todo.md). It does not
-authorize future Wasm-target work. All remaining present-tense and normative
-wording records the completed v0.1 baseline; it is not current direction or
-instruction.
+**Superseded.** The approved [Forth-2012 vision](VISION.md) replaced this Wasm target on 2026-09-06. 
+
+This document records the completed v0.1 WebAssembly baseline for historical and verification reference. The task checklist is recorded in [`tasks/todo.md`](../tasks/todo.md). This specification does not authorize future Wasm work. All normative language describes the completed v0.1 release, not current development directions.
 
 ## Objective
 
-NanaST is a Rust command-line compiler for Botnana Control (BNC). Version 0.1 proved the end-to-end toolchain: it compiled a deliberately small Structured Text (ST) program into a WebAssembly module that BNC could execute cyclically on Linux through Wasmtime.
+NanaST is a Rust command-line compiler for Botnana Control (BNC). Version 0.1 verified the end-to-end toolchain by compiling a small Structured Text (ST) program into a WebAssembly (Wasm) module. BNC could then execute this module cyclically on Linux using Wasmtime.
 
-The intended user was a BNC developer validating controller logic from the command line. Success was not IEC 61131-3 completeness or production controller readiness; it was a reliable, tested compile-and-run vertical slice.
+The goal was to provide a command-line tool for BNC developers to validate control logic. Success was defined as a reliable, automated compile-and-run workflow, rather than full IEC 61131-3 compliance.
 
-### User workflow
+### User Workflow
 
 ```text
 $ nanastc compile examples/pass_through.st --output pass_through.wasm
 $ bnc-wasm-host pass_through.wasm --scans 2
 ```
 
-The host loads the output module with Wasmtime, initializes it once, invokes its scan function twice, and can observe the expected BNC output values.
+In this workflow:
+1. The host loads the output Wasm module using Wasmtime.
+2. It initializes the module once.
+3. It calls the scan function twice and checks the resulting BNC output values.
 
 ## v0.1 Scope
 
-### Supported source model
+### Supported Source Model
 
-A source file contains exactly one `PROGRAM` declaration. The compiler supports:
+Each source file contains exactly one `PROGRAM` declaration. The v0.1 compiler supports:
 
-- `BOOL`, `INT`, and `DINT` scalar values.
-- `VAR`, `VAR_INPUT`, and `VAR_OUTPUT` declaration blocks.
-- Literal initializers for `VAR` declarations.
-- Variable references, parentheses, unary `NOT` and negation, arithmetic, comparisons, and Boolean operations.
+- Scalar types: `BOOL`, `INT`, and `DINT`.
+- Declaration blocks: `VAR`, `VAR_INPUT`, and `VAR_OUTPUT`.
+- Literal initial values for `VAR` variables.
+- Expressions: variable references, parentheses, unary `NOT`, unary negation, arithmetic, comparisons, and Boolean operations.
 - Assignment statements.
-- `IF` / `THEN` / `ELSE` / `END_IF` statements.
+- Conditional statements: `IF` / `THEN` / `ELSE` / `END_IF`.
 
-`VAR_INPUT` and `VAR_OUTPUT` variables are BNC I/O mappings. Their zero-based index is their declaration order within their respective block. For example, the first `VAR_INPUT` is read from input index `0`; the first `VAR_OUTPUT` is written to output index `0`.
+Variables in `VAR_INPUT` and `VAR_OUTPUT` represent BNC I/O channels. Their zero-based index matches their declaration order in each block. For example:
+- The first `VAR_INPUT` maps to input index `0`.
+- The first `VAR_OUTPUT` maps to output index `0`.
 
-### Explicitly out of scope
+### Explicitly Out of Scope
 
-- Instruction List (IL), Sequential Function Chart (SFC), and graphical languages.
-- Functions, function blocks, timers, external libraries, configurations, resources, tasks, and direct-address syntax.
-- Arrays, structures, strings, real numbers, time/date types, and user-defined types.
-- Retained/persistent variables, online debugging, an IDE, and production real-time guarantees.
+- Other IEC languages: Instruction List (IL), Sequential Function Chart (SFC), and graphical languages.
+- Advanced program organization: functions, function blocks, timers, external libraries, configurations, resources, tasks, and direct-memory syntax (`%I*`, `%Q*`).
+- Complex data types: arrays, structs, strings, floating-point numbers (`REAL`), dates, times, and user-defined types.
+- Advanced runtime features: retained variables, online debugging, IDE integration, and production real-time guarantees.
 - Full source or behavioral compatibility with MATIEC.
 
-Unsupported syntax or semantics must produce a source-located diagnostic and a non-zero compiler exit status; they must not silently produce a partial Wasm module.
+Unsupported language features must produce a compiler error with source line and column numbers, followed by a non-zero exit code. The compiler must never produce an incomplete or silent partial Wasm binary.
 
 ## BNC Wasm ABI
 
-Each generated module has this v0.1 core Wasm ABI.
+Every generated Wasm module follows this v0.1 ABI.
 
 ### Imports
 
-The module imports these functions from the `bnc` import module:
+The module imports two functions from the `bnc` namespace:
 
 ```text
 read_input(index: i32) -> i32
 write_output(index: i32, value: i32)
 ```
 
-Values use Wasm `i32` at this boundary. `BOOL` values are normalized to `0` or `1`; `INT` uses signed 16-bit semantics; and `DINT` uses signed 32-bit semantics. Runtime `INT` arithmetic wraps as signed 16-bit arithmetic. The compiler folds constant expressions and diagnoses a constant result that is outside the `INT` range instead of wrapping it.
+At this boundary, all values are represented as 32-bit integers (`i32`):
+- `BOOL` values are normalized to `0` (`FALSE`) or `1` (`TRUE`).
+- `INT` values represent signed 16-bit integers.
+- `DINT` values represent signed 32-bit integers.
+- At runtime, `INT` arithmetic wraps as signed 16-bit integers. The compiler folds constant expressions and reports an error if a constant result falls outside the `INT` range, rather than wrapping it.
 
 ### Exports
+
+The module exports two lifecycle functions:
 
 ```text
 nana_init() -> ()
 nana_scan() -> ()
 ```
 
-The BNC host must call `nana_init` exactly once after instantiation and before the first scan. It calls `nana_scan` once per controller scan cycle.
+- **`nana_init`:** The BNC host must call this function once after instantiating the module, before running the first scan cycle. It sets initial default or declared values for `VAR` variables.
+- **`nana_scan`:** The BNC host calls this function once per scan cycle.
 
-For every scan, the generated module reads all `VAR_INPUT` values before executing program statements, then writes all `VAR_OUTPUT` values after execution. This gives one program execution a stable input snapshot and avoids output timing depending on statement order.
+During each scan cycle:
+1. The module reads all `VAR_INPUT` values into memory before executing any statements.
+2. It executes the program logic.
+3. It writes all `VAR_OUTPUT` values out to the host.
 
-`VAR` state survives across calls to `nana_scan` during one Wasm instance lifetime. `nana_init` assigns default or declared initial values. v0.1 does not preserve state after an instance is discarded or the controller restarts.
+This snapshot approach ensures inputs remain stable throughout a single cycle and prevents statement order from affecting output timing.
+
+Internal `VAR` values persist across multiple calls to `nana_scan` for the lifetime of the Wasm instance. However, v0.1 does not preserve state after the Wasm instance is discarded or the host restarts.
 
 ## Tech Stack
 
-- Rust, edition 2024.
-- A native Linux command-line compiler named `nanastc`.
-- WebAssembly binary output targeting the core Wasm MVP (`wasm32` integer/control-flow features only).
-- Wasmtime 45.0.1 as the Linux development and integration-test runtime; this is the newest supported release compatible with the project Rust toolchain (1.93.1).
-- `wasm-encoder` 0.258.0 for binary generation and `wasmtime` 45.0.1 for runtime integration tests.
+- **Language:** Rust (2024 edition).
+- **Executable:** Native Linux command-line tool (`nanastc`).
+- **Target Output:** Core WebAssembly MVP (`wasm32` integer and control flow features only).
+- **Runtime Environment:** Wasmtime 45.0.1 on Linux (pinned to match the Rust 1.93.1 toolchain).
+- **Dependencies:** `wasm-encoder` (0.258.0) for Wasm binary generation; `wasmtime` (45.0.1) for integration tests.
 
-The compiler itself is a native Rust executable in v0.1; only the generated controller program is Wasm.
+The compiler runs as a native Rust program; only the compiled PLC program runs as Wasm.
 
 ## Commands
 
-Commands expected when implementation begins:
+Standard commands used for the v0.1 build:
 
 ```sh
 cargo fmt --check
@@ -104,25 +117,25 @@ cargo run -- compile examples/pass_through.st --output target/pass_through.wasm
 ```text
 src/
   main.rs       # CLI entry point
-  cli.rs        # command parsing and process exit behavior
-  lexer.rs      # source text to tokens
-  parser.rs     # tokens to AST
-  ast.rs        # syntax tree and source spans
-  sema.rs       # names, types, and unsupported-feature diagnostics
-  wasm.rs       # typed AST to a core Wasm module
+  cli.rs        # Argument parsing and exit code handling
+  lexer.rs      # Source code tokenization
+  parser.rs     # Parser that builds the AST from tokens
+  ast.rs        # Abstract Syntax Tree definitions and source spans
+  sema.rs       # Semantic analysis: types, names, and error reporting
+  wasm.rs       # Emits core Wasm bytecode from a validated AST
 tests/
-  fixtures/     # ST input programs
-  compiler.rs   # parsing, diagnostics, and output validation
-  runtime.rs    # Wasmtime end-to-end scan-cycle tests
+  fixtures/     # Sample Structured Text input files
+  compiler.rs   # Tests for parsing, type-checking, and bytecode validation
+  runtime.rs    # End-to-end scan tests using Wasmtime
 docs/
-  SPEC-v0.1.md  # this document
+  SPEC-v0.1.md  # This document
 ```
 
-The project remains a single Cargo package until independently reusable components justify a workspace split.
+The codebase remains a single Cargo package until components need to be reused elsewhere.
 
 ## Code Style
 
-Use explicit domain types and propagate source-aware failures rather than panicking on user input.
+Use explicit domain types and return clear errors instead of panicking on user input.
 
 ```rust
 fn compile(source: &str) -> Result<Vec<u8>, CompileError> {
@@ -133,54 +146,51 @@ fn compile(source: &str) -> Result<Vec<u8>, CompileError> {
 }
 ```
 
-- Format with `rustfmt`; keep `clippy` warnings at zero.
-- Use `snake_case` for functions/modules and `UpperCamelCase` for types.
-- Keep parsing, semantic analysis, and code generation separate.
-- Include source spans in parse and semantic diagnostics.
-- Do not add a dependency solely for anticipated future needs.
+- Format code using `rustfmt`; ensure `cargo clippy` emits zero warnings.
+- Use `snake_case` for functions and modules; use `UpperCamelCase` for types.
+- Keep lexing, parsing, semantic analysis, and code generation cleanly separated.
+- Include source spans (line and column numbers) in compiler diagnostics.
+- Avoid adding dependencies for hypothetical future needs.
 
 ## Testing Strategy
 
-Tests define the supported language behavior.
+Automated tests verify all supported language features:
 
-- **Lexer/parser unit tests:** valid constructs produce the intended AST; invalid syntax identifies its source location.
-- **Semantic unit tests:** undeclared variables, incompatible types, duplicate declarations, and unsupported features fail with diagnostics.
-- **Code-generation tests:** emitted modules validate as core Wasm.
-- **Runtime integration tests:** compile fixture ST source, instantiate it in Wasmtime with a fake BNC host, call `nana_init` and `nana_scan`, and assert recorded output values.
+- **Lexer/Parser tests:** Verify that valid syntax produces the expected AST, and invalid syntax reports correct source locations.
+- **Semantic analysis tests:** Verify that undeclared variables, duplicate names, type mismatches, and unsupported features produce clear errors.
+- **Code generation tests:** Verify that emitted bytecode is valid core WebAssembly.
+- **Runtime integration tests:** Compile sample ST files, load them into Wasmtime with a mock BNC host, invoke `nana_init` and `nana_scan`, and verify output values.
 
-The first required runtime fixture is a Boolean pass-through program: one `VAR_INPUT` is assigned to one `VAR_OUTPUT`; changing the host input changes the observed output after a scan.
+The primary test case is a Boolean pass-through program: one `VAR_INPUT` connects directly to one `VAR_OUTPUT`. Changing the input value on the host must produce the corresponding output value after a scan cycle.
 
 ## Boundaries
 
 ### Always
-
-- Preserve the defined BNC Wasm ABI and verify it end-to-end.
-- Add a test before or with every behavior change.
+- Follow the defined BNC Wasm ABI and test it thoroughly.
+- Include automated tests for every behavior change.
 - Run formatting, Clippy, and tests before committing.
-- Keep the implementation clean-room: do not copy MATIEC source, tests, or documentation.
+- Maintain clean-room code: do not copy source code, tests, or text from MATIEC.
 
-### Ask first
-
-- Adding Cargo dependencies.
-- Changing the Wasm import/export ABI.
-- Expanding the supported ST subset.
-- Creating a workspace, changing CI, or adding persistent state or real-time behavior.
+### Ask First
+- Adding new Cargo dependencies.
+- Modifying the Wasm ABI (imported or exported functions).
+- Adding new Structured Text syntax.
+- Splitting the project into a multi-crate workspace, altering CI, or adding real-time requirements.
 
 ### Never
-
-- Commit generated `target/` output, binaries, secrets, or machine-specific configuration.
-- Silently accept unsupported IEC features.
-- Claim full IEC 61131-3 or MATIEC compatibility from this v0.1 subset.
+- Commit generated build artifacts (`target/`), binaries, credentials, or environment-specific configuration.
+- Silently ignore unsupported IEC syntax.
+- Claim complete IEC 61131-3 or MATIEC compatibility for this minimal subset.
 
 ## Success Criteria
 
-1. `nanastc compile <input.st> --output <output.wasm>` accepts a valid v0.1 ST program and writes a valid Wasm module.
-2. The module exports `nana_init` and `nana_scan` and imports only the specified `bnc` functions.
-3. A Wasmtime integration test can initialize the module, run at least two scans, and observe the expected BNC output changes.
-4. Invalid syntax, semantic errors, and unsupported features identify the relevant source location and do not create or modify the requested output module. Successful output replaces an existing module atomically.
-5. `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` pass.
+1. Running `nanastc compile <input.st> --output <output.wasm>` compiles valid v0.1 ST source into a valid Wasm module.
+2. The generated module exports `nana_init` and `nana_scan`, and imports only the two specified `bnc` functions.
+3. A Wasmtime test can initialize the module, run at least two scan cycles, and verify expected output changes.
+4. Syntax errors, type errors, and unsupported features report precise source locations and leave the target file untouched. Successful compilation updates the output file atomically.
+5. All verification commands (`cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`) pass.
 
 ## Open Questions
 
-- What controller configuration will bind named physical BNC I/O to the declaration-order indices? v0.1 tests use a fake host; production configuration is out of scope.
-- Should a future BNC ABI use the WebAssembly Component Model and WIT? It is deferred until a production host interface is needed.
+- How will physical BNC I/O channels be mapped to zero-based declaration indices in production? (v0.1 relies on a mock test host; production mapping was deferred).
+- Should future versions use the WebAssembly Component Model and WIT? (Deferred until a production host runtime is chosen).

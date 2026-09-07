@@ -10,58 +10,44 @@ tags: [idea, nanast, rfopt, forth, bnc]
 
 ## Status
 
-Sirius Wu accepted this direction on 2026-09-06. The governing policy is the
-approved [NanaST vision](../VISION.md); active requirements and architecture
-are owned by the [rfopt Boolean Pass-Through Target](../features/rfopt-target/requirements.md)
-and its [architecture](../features/rfopt-target/architecture.md). This artifact
-retains the considered direction and does not own evolving requirements.
+Sirius Wu accepted this candidate direction on 2026-09-06. The overarching policy is defined in the approved [NanaST vision](../VISION.md). Active requirements and architecture are owned by the [rfopt Boolean Pass-Through Target](../features/rfopt-target/requirements.md) and its [architecture](../features/rfopt-target/architecture.md). This document preserves the original direction and context.
 
 ## Problem Statement
 
-How can NanaST gain a runtime target suited to BNC without requiring a complete
-Forth-2012 implementation, embedding Forth runtime implementation in NanaST,
-or beginning BNC migration before a minimal generated artifact works?
+How can NanaST gain a runtime target suitable for BNC without:
+- Requiring a full Forth-2012 implementation,
+- Embedding Forth runtime internals directly inside NanaST, or
+- Starting BNC migration before verifying a minimal generated program?
 
 ## Recommended Direction
 
-Track rfopt as a Git submodule pinned by NanaST. rfopt remains an independently
-versioned project: runtime changes are committed in rfopt, then NanaST advances
-its pinned revision and runs cross-repository target evidence.
+Track `rfopt` as a pinned Git submodule in NanaST. `rfopt` remains an independently versioned project:
+1. Runtime changes are committed in the `rfopt` repository.
+2. NanaST updates its pinned submodule commit and runs cross-repository integration tests.
 
-rfopt is NanaST's sole planned runtime only while it continues to earn that
-selection through evidence that it can satisfy BNC's needs. NanaST will emit
-only the explicitly inventoried Forth-2012 subset that rfopt implements and
-verifies for the target; it does not claim full Forth-2012 conformance. The
-first gate is that rfopt loads and executes the generated Boolean pass-through
-artifact. rfopt real-time evidence is required for any later real-time claim.
+`rfopt` serves as NanaST's primary planned runtime as long as test results show it satisfies BNC's requirements. NanaST emits only the explicitly listed Forth-2012 words that `rfopt` implements for this target. The first milestone is loading and executing the generated Boolean pass-through program. Real-time claims will require separate benchmark evidence in `rfopt`.
 
 ## Key Assumptions to Validate
 
-- [ ] rfopt can implement the first required-word inventory and a source-loading
-  boundary sufficient to execute the pass-through artifact.
-- [ ] The pass-through result can be tested on the AMD64 Linux development host
-  from a NanaST checkout with the pinned rfopt submodule.
-- [ ] Later rfopt evidence can establish the BNC-relevant runtime properties
-  without placing BNC integration in NanaST.
-- [ ] BNC can assess and own a later incremental migration from rtForth to
-  rfopt after these gates pass.
+- [ ] `rfopt` can implement the initial word inventory and provide an in-memory API to load and execute the pass-through program.
+- [ ] The pass-through test can run on an AMD64 Linux development host using NanaST and the pinned `rfopt` submodule.
+- [ ] Subsequent test evidence in `rfopt` can prove required runtime properties without coupling BNC hardware code into NanaST.
+- [ ] BNC can evaluate and manage a gradual migration from `rtforth` to `rfopt` after these milestones pass.
 
 ## MVP Scope
 
-- Add the rfopt submodule.
-- Specify and generate the Boolean pass-through Forth artifact.
-- Implement the required subset in rfopt on AMD64 Linux.
-- Run the artifact on rfopt and retain AMD64 compatibility evidence.
+- Add `rfopt` as a Git submodule.
+- Specify and generate the Forth source for the Boolean pass-through program.
+- Implement the required Forth words in `rfopt` on AMD64 Linux.
+- Run the pass-through artifact on `rfopt` and verify compatibility on AMD64.
 
-AArch64 target work begins only after the AMD64 NanaST target gate passes.
+Work on the AArch64 target begins only after the AMD64 gate passes.
 
-## Not Doing
+## Non-Goals (What We Are Not Doing)
 
-- **Git subtree:** It would blur rfopt ownership and make later independent BNC
-  adoption harder.
-- **Full Forth-2012:** rfopt only needs the inventory that NanaST requires.
-- **SwiftForth or rtForth target support:** rfopt is the sole planned runtime.
-- **AArch64 target work:** It waits until the AMD64 NanaST target gate passes.
-- **Real-time claim:** The compatibility gate alone is not timing, memory, or
-  safety evidence.
-- **BNC integration or migration:** BNC owns that later work.
+- **Git subtree:** Using subtrees would blur project ownership and make independent BNC adoption harder.
+- **Full Forth-2012 standard:** `rfopt` only needs the specific Forth words that NanaST generates.
+- **SwiftForth or rtForth compiler targets:** `rfopt` is the only planned runtime target.
+- **Immediate AArch64 work:** AArch64 development is deferred until AMD64 verification succeeds.
+- **Unverified real-time claims:** Passing the initial compatibility gate does not prove timing, memory, or safety limits.
+- **Direct BNC hardware migration:** BNC manages its own migration and hardware integration.

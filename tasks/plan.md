@@ -2,11 +2,13 @@
 
 ## Status
 
-Completed historical plan. It implements the former Wasm scope in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md); completion evidence is recorded in [`todo.md`](todo.md). The approved [Forth-2012 vision](../docs/VISION.md) superseded that direction on 2026-09-06. All remaining directives record completed work and are not current instruction.
+**Completed (Historical).** This plan implemented the original WebAssembly scope described in [`docs/SPEC-v0.1.md`](../docs/SPEC-v0.1.md). Verification of its completion is recorded in [`todo.md`](todo.md). 
+
+On 2026-09-06, the approved [Forth-2012 vision](../docs/VISION.md) superseded the Wasm target. This document is kept for historical reference and does not represent active tasks.
 
 ## Objective
 
-Deliver a native Rust CLI, `nanastc`, that compiles the v0.1 Structured Text subset into a core Wasm module. An integration test runs that module under Wasmtime with a fake BNC host and proves the `nana_init` / `nana_scan` lifecycle and BNC I/O behavior.
+Build a native Rust command-line tool, `nanastc`, that compiles the v0.1 Structured Text subset into a core WebAssembly module. An integration test runs that module inside Wasmtime with a mock BNC host, verifying the `nana_init` and `nana_scan` lifecycle and input/output handling.
 
 ## Proposed Architecture
 
@@ -17,79 +19,79 @@ CLI source path
 lexer -> parser -> AST -> semantic analysis -> Wasm emitter -> .wasm
                                                         |
                                                         v
-                                    Wasmtime test host with `bnc` imports
+                                     Wasmtime test host with `bnc` imports
 ```
 
 | Component | Responsibility | Depends on |
 |---|---|---|
-| CLI | Parse `nanastc compile <input> --output <output>`; read/write files; render diagnostics; return correct exit status. | compiler facade |
-| Lexer | Convert source text into span-carrying ST tokens. | source/span types |
-| Parser | Parse the supported program, declarations, expressions, and statements into an AST. | lexer, AST |
-| Semantic analysis | Resolve names; enforce v0.1 types and assignment rules; reject unsupported forms. | AST |
-| Wasm emitter | Convert validated program state and statements into the defined `bnc` imports and `nana_init` / `nana_scan` exports. | typed AST |
-| Runtime test host | Instantiate emitted modules in Wasmtime; provide input/output imports; assert scan behavior. | emitted module, ABI |
+| **CLI** | Parses `nanastc compile <input> --output <output>`, reads/writes files, displays error diagnostics, and returns exit codes. | Compiler facade |
+| **Lexer** | Converts source code text into tokens tagged with line/column spans. | Source span types |
+| **Parser** | Parses programs, declarations, expressions, and statements into an Abstract Syntax Tree (AST). | Lexer, AST types |
+| **Semantic analysis** | Resolves variable names, checks v0.1 types and assignments, and rejects unsupported features. | AST |
+| **Wasm emitter** | Generates core Wasm bytecode matching the `bnc` imports and `nana_init`/`nana_scan` exports. | Typed AST |
+| **Runtime test host** | Loads emitted modules in Wasmtime, supplies mock inputs/outputs, and verifies scan behavior. | Emitted module, ABI |
 
-The v0.1 compiler directly emits Wasm from a validated AST. It deliberately has no separate IR: the supported language is small, and an IR should be introduced only when a later feature makes direct emission difficult to maintain.
+The v0.1 compiler generates Wasm bytecode directly from the validated AST. It omits an intermediate representation (IR) to keep the minimal compiler simple. An IR can be added later if language complexity requires it.
 
 ## Implementation Sequence
 
-### 1. Establish the compiler boundary
+### 1. Establish the Compiler Boundary
 
-- Add `wasm-encoder` 0.258.0 and Wasmtime 45.0.1; Wasmtime 45.0.1 is pinned because newer releases require a Rust compiler newer than the project toolchain (1.93.1).
-- Define source spans, diagnostic types, and the compile facade returning either Wasm bytes or source-aware errors.
-- Define CLI argument and filesystem error behavior.
+- Add dependencies: `wasm-encoder` (0.258.0) and `wasmtime` (45.0.1). Wasmtime is pinned to 45.0.1 for compatibility with Rust 1.93.1.
+- Define source spans, diagnostic error types, and the top-level `compile` function returning either Wasm bytes or structured errors.
+- Implement basic CLI argument handling and file error messages.
 
-**Checkpoint:** `nanastc compile` recognizes its required arguments and reports a usable error for missing or unreadable input.
+**Checkpoint:** `nanastc compile` recognizes arguments and reports clear errors for missing or unreadable files.
 
-### 2. Parse the v0.1 ST subset
+### 2. Parse the v0.1 ST Subset
 
-- Implement lexical recognition for keywords, identifiers, literals, punctuation, and operators.
-- Implement a precedence-aware expression parser and program/declaration/statement parser.
-- Preserve spans from source through AST nodes.
+- Implement lexing for keywords, identifiers, literals, punctuation, and operators.
+- Implement an operator-precedence parser for expressions, declarations, and statements.
+- Attach source spans to tokens and AST nodes for accurate error reporting.
 
-**Checkpoint:** parser fixtures cover a valid pass-through program and malformed source reports a line/column location.
+**Checkpoint:** Test fixtures parse a valid pass-through program, and invalid source files report accurate line and column numbers.
 
-### 3. Validate language semantics
+### 3. Validate Language Semantics
 
-- Build declaration scopes for `VAR`, `VAR_INPUT`, and `VAR_OUTPUT`.
-- Resolve references; reject duplicates and undeclared names.
-- Enforce `BOOL`, `INT`, and `DINT` operator and assignment compatibility.
-- Allocate BNC input/output indices from declaration order.
+- Build symbol tables for `VAR`, `VAR_INPUT`, and `VAR_OUTPUT` blocks.
+- Resolve variable names and reject duplicate declarations or undeclared names.
+- Enforce type compatibility for `BOOL`, `INT`, and `DINT` expressions and assignments.
+- Assign zero-based I/O channel indices based on declaration order.
 
-**Checkpoint:** valid typed fixtures pass; duplicate declarations, unknown variables, invalid operators, and unsupported declarations fail without generating Wasm.
+**Checkpoint:** Valid typed programs pass analysis. Duplicate variables, unknown names, invalid operators, and unsupported features fail before code generation.
 
 ### 4. Emit the BNC Wasm ABI
 
-- Emit only the `bnc.read_input` and `bnc.write_output` imports and `nana_init` / `nana_scan` exports from the specification.
-- Represent scalar program state as Wasm `i32` globals; initialize `VAR` state in `nana_init`.
-- At scan start, read every input into program state; emit assignments and `IF` control flow; at scan end, write every output.
-- Validate emitted bytes before writing the output file.
+- Emit only the specified `bnc.read_input` and `bnc.write_output` imports, and `nana_init` and `nana_scan` exports.
+- Store scalar variables as global Wasm `i32` variables; initialize them during `nana_init`.
+- In `nana_scan`, read all inputs into memory, execute statement logic, and write all outputs at the end of the scan.
+- Validate emitted bytecode before writing the output file.
 
-**Checkpoint:** generated modules validate and their imported/exported ABI exactly matches the specification.
+**Checkpoint:** Generated Wasm files pass validation and match the specified ABI signature exactly.
 
-### 5. Prove the vertical slice under Wasmtime
+### 5. Verify Under Wasmtime
 
-- Implement a fake BNC host with inspectable input and output state.
-- Compile and instantiate a Boolean pass-through fixture.
-- Call `nana_init`, change host input values, call `nana_scan` twice, and assert the expected outputs.
-- Add CLI integration coverage that ensures failed compilation does not leave a usable output file.
+- Implement a mock BNC host in tests with inspectable input and output states.
+- Compile and instantiate the Boolean pass-through test fixture.
+- Call `nana_init`, modify mock inputs, call `nana_scan` twice, and assert expected outputs.
+- Verify that a failed compilation leaves existing output files untouched.
 
-**Checkpoint:** the documented v0.1 user workflow is automated and passes with `cargo test`.
+**Checkpoint:** The complete v0.1 workflow is automated and passes under `cargo test`.
 
 ## Key Decisions and Risks
 
-| Item | Plan | Mitigation / decision gate |
+| Item | Plan | Mitigation / Decision Gate |
 |---|---|---|
-| Wasm libraries | Use `wasm-encoder` 0.258.0 for binary generation and `wasmtime` 45.0.1 for runtime integration tests. | Wasmtime 45.0.1 is the newest release compatible with Rust 1.93.1; revisit when the toolchain is upgraded. |
-| ABI stability | Treat the spec's `bnc` imports and `nana_*` exports as a tested contract. | ABI changes require a spec and decision update. |
-| Input determinism | Snapshot all inputs before program statements, then flush outputs after them. | Runtime tests assert the ordering behavior. |
-| IEC integer semantics | Runtime `INT` arithmetic wraps as signed 16-bit arithmetic; out-of-range constant-folding results are diagnostics. | Unit tests cover both behaviors before code generation depends on them. |
-| Scope growth | PLC features such as functions, timers, direct I/O addresses, and retain state create distinct semantics. | Keep them rejected with diagnostics until separately specified. |
-| Clean-room provenance | No MATIEC material may enter the implementation or fixtures. | Write original fixtures from the approved spec and review contributions for provenance. |
+| **Wasm libraries** | Use `wasm-encoder` 0.258.0 for code generation and `wasmtime` 45.0.1 for runtime testing. | Wasmtime 45.0.1 is the latest version compatible with Rust 1.93.1. Re-evaluate when upgrading the toolchain. |
+| **ABI stability** | Treat `bnc` imports and `nana_*` exports as a fixed interface contract. | Any ABI change requires a spec update and formal decision. |
+| **Deterministic inputs** | Snapshot all inputs before statements run; flush all outputs after statements finish. | Runtime tests verify this execution order. |
+| **Integer behavior** | Runtime `INT` math wraps as signed 16-bit integers. Out-of-range constant folding triggers compiler errors. | Unit tests cover both behaviors before code generation relies on them. |
+| **Scope growth** | PLC features like functions, timers, direct `%I*` addressing, and retain variables introduce subtle semantics. | Reject them with clear diagnostics until explicitly specified. |
+| **Clean-room development** | No code or fixtures from MATIEC may be copied. | Write original fixtures and review all contributions for provenance. |
 
 ## Verification Checkpoints
 
-Each implementation increment must pass:
+Every implementation step must pass:
 
 ```sh
 cargo fmt --check
@@ -97,10 +99,10 @@ cargo clippy -- -D warnings
 cargo test
 ```
 
-The final increment additionally proves that emitted output is accepted by Wasmtime and meets the BNC ABI contract.
+The final milestone also verifies that emitted bytecode runs successfully in Wasmtime and satisfies the BNC ABI.
 
 ## Decisions Recorded
 
-- Add `wasm-encoder` 0.258.0 and `wasmtime` 45.0.1 after the task list is approved.
-- Runtime `INT` arithmetic wraps as signed 16-bit arithmetic; constant-folding results outside the `INT` range are diagnostics.
+- Add `wasm-encoder` 0.258.0 and `wasmtime` 45.0.1 once this task list is approved.
+- Runtime `INT` arithmetic wraps as signed 16-bit integers; out-of-range constants produce compile-time errors.
 - This implementation plan is approved.

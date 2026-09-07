@@ -1,7 +1,7 @@
 ---
 type: "Software Architecture Design"
 title: "Architecture: rfopt AMD64 Pass-Through Gate"
-description: "In-process rfopt host boundary for the first NanaST generated-artifact test."
+description: "In-process host API between NanaST and rfopt for the first generated Forth test on AMD64."
 status: "accepted"
 tags: [architecture, design, nanast, rfopt, amd64, forth]
 ---
@@ -10,28 +10,22 @@ tags: [architecture, design, nanast, rfopt, amd64, forth]
 
 ## Architecture Question
 
-How does the first AMD64 NanaST target test load generated Forth source, invoke
-its public lifecycle words, and inspect I/O cells without adding Forth words,
-requiring a CLI, or coupling either project to BNC?
+How can the first AMD64 NanaST target test:
+1. Load generated Forth source,
+2. Invoke its public lifecycle words, and
+3. Inspect input/output (I/O) cells,
 
-Sirius Wu approved an rfopt-owned in-process host API on 2026-09-06. The
-[requirements](requirements.md) own the target behavior and word inventory.
+without adding extra Forth words, requiring a CLI, or coupling either project to BNC?
+
+On 2026-09-06, Sirius Wu approved an in-process host API owned by rfopt. The [requirements](requirements.md) document defines the target behavior and the list of supported Forth words.
 
 ## Significant Drivers
 
-- **Approved behavior:** rfopt loads the generated Boolean pass-through source,
-  executes `nana-init` and `nana-scan`, and lets the host prove canonical
-  `0`/`1` output behavior.
-- **Platform:** The first execution target is the AMD64 Linux development host.
-  AArch64 work waits for the AMD64 gate.
-- **Forth boundary:** Generated source requires only `:`, `;`, `VARIABLE`,
-  `@`, `!`, `IF`, `ELSE`, and `THEN`; host operations must not become implicit
-  Forth dependencies.
-- **Failure behavior:** A load, lookup, cell-access, or invocation failure must
-  reach the test as a named runtime failure. It must not be mistaken for target
-  support.
-- **Non-goals:** No CLI, terminal or file I/O, BNC hardware, shared-memory I/O,
-  real-time claim, or AArch64 execution is part of this gate.
+- **Approved behavior:** rfopt loads generated Boolean pass-through source, runs `nana-init` and `nana-scan`, and lets the host verify canonical `0` and `1` outputs.
+- **Target platform:** The initial execution target is the AMD64 Linux development host. AArch64 support will follow after AMD64 verification succeeds.
+- **Forth language boundary:** Generated source requires only `:`, `;`, `VARIABLE`, `@`, `!`, `IF`, `ELSE`, and `THEN`. Host operations must not add new Forth language dependencies.
+- **Failure handling:** If loading, word lookup, cell access, or execution fails, the system must return a clear, named runtime error. The test suite must never mistake an error for supported behavior.
+- **Non-goals:** This gate excludes CLI tools, terminal or file I/O, BNC hardware, shared-memory I/O, real-time performance guarantees, and AArch64 execution.
 
 ## Context and Boundaries
 
@@ -44,80 +38,69 @@ NanaST integration test
   v
 rfopt in-process host API
   | loads source; resolves and invokes public words;
-  | owns dictionary, execution, and opaque cell handles
+  | manages dictionary, execution, and opaque cell handles
   v
 rfopt runtime
 ```
 
-NanaST owns the compiler, generated source, and pinned cross-repository gate.
-rfopt owns source loading, word execution, cell storage, and its runtime-unit
-evidence. The integration test is the only consumer of this host API in the
-first feature. BNC is outside this interaction.
+### Component Responsibilities
+- **NanaST:** Responsible for the compiler, generated Forth source, and the integration test runner.
+- **rfopt:** Responsible for source loading, word execution, cell storage, and its internal unit tests.
+- **Integration scope:** In this initial feature, the NanaST integration test is the only caller of the rfopt host API. BNC hardware is completely outside this scope.
 
 ## Selected Architecture
 
-rfopt provides an in-process API with these conceptual operations:
+rfopt provides an in-process API with the following core operations:
 
 | Operation | Owner | Contract |
 |---|---|---|
-| Load source | rfopt | Accept generated Forth source from memory and either create its definitions or return a load error. |
-| Resolve public word | rfopt | Find a named generated word and return an opaque executable handle or a named lookup error. |
-| Invoke word | rfopt | Execute an opaque word handle and either complete with the specified stack effect or return an execution error. |
-| Obtain cell handle | rfopt | Resolve a `VARIABLE` definition internally and return an opaque host-cell handle. The host never receives its Forth address. |
-| Read or write cell | rfopt | Read or write a cell through its handle; this lets the test inject `-1` without requiring Forth source to parse it. |
+| **Load source** | rfopt | Accepts Forth source code from memory. Creates definitions or returns a load error. |
+| **Resolve public word** | rfopt | Finds a named generated word. Returns an opaque executable handle or a lookup error. |
+| **Invoke word** | rfopt | Executes an opaque word handle. Completes with the expected stack effect or returns an execution error. |
+| **Obtain cell handle** | rfopt | Resolves a `VARIABLE` definition internally and returns an opaque cell handle. The host never sees the internal Forth memory address. |
+| **Read or write cell** | rfopt | Reads or writes a cell value through its handle. This lets tests inject `-1` directly without needing Forth source to parse it. |
 
-Exact Rust type names, ownership types, and error enums are detailed design.
-The API must keep dictionary pointers and raw runtime memory private from
-NanaST. Handles become invalid when their owning runtime instance is dropped;
-rfopt enforces that lifecycle.
+Exact Rust types, ownership models, and error enums will be defined during detailed design. 
 
-The target implementation must add a NanaST-owned
-`scripts/run-rfopt-target.sh` gate runner. It verifies that the rfopt submodule
-is clean and that its `HEAD` equals the superproject gitlink before Cargo
-compiles the path development dependency; direct `cargo test` is not
-target-gate evidence. Only then does the runner start the NanaST AMD64
-integration test, which links the pinned `rfopt` API. Its sequence is:
+The API must keep dictionary pointers and raw runtime memory private from NanaST. Cell and word handles become invalid when their parent runtime instance is dropped. rfopt enforces this lifecycle.
 
-1. Compile the pass-through fixture to Forth source in memory.
-2. Create one rfopt runtime instance and load that source.
-3. Resolve `nana-input-0`, `nana-output-0`, `nana-init`, and `nana-scan`.
-4. Obtain the two opaque cell handles, invoke initialization, write test inputs,
-   invoke scans, and read the output handle.
-5. Assert the acceptance cases in `requirements.md`; fail with the returned
-   compiler or runtime error context.
+### Gate Runner and Test Flow
+
+NanaST will add a gate runner script at `scripts/run-rfopt-target.sh`. Running `cargo test` directly does not count as gate verification. The runner script must verify two prerequisites before compiling:
+1. The `rfopt` git submodule has no uncommitted changes (working directory is clean).
+2. The submodule `HEAD` matches the exact commit pinned in the NanaST repository.
+
+Once verified, the runner invokes Cargo to build the path dependency and run the NanaST AMD64 integration test. The test follows this sequence:
+
+1. Compile the pass-through test fixture into Forth source in memory.
+2. Create an rfopt runtime instance and load that source.
+3. Resolve the public words: `nana-input-0`, `nana-output-0`, `nana-init`, and `nana-scan`.
+4. Obtain the two cell handles, call initialization, write input values, trigger scans, and read the output handle.
+5. Verify all acceptance cases defined in `requirements.md`. If a step fails, report the compiler or runtime error context.
 
 ## Rejected Candidates
 
-| Candidate | Rejection |
+| Candidate | Why Rejected |
 |---|---|
-| Interactive or batch CLI | Adds process, text I/O, and exit-code behavior before the runtime can execute the minimal artifact. |
-| Generated Forth host-access words | Expands NanaST's Forth inventory and makes a test harness an implicit target dependency. |
-| BNC shared-memory or device host | Couples the first compatibility gate to later BNC integration and real-time work. |
-| Raw-address access from NanaST | Leaks rfopt memory layout and cannot enforce runtime-instance lifetime. |
+| **Interactive or batch CLI** | Requires process management, text I/O, and exit-code handling before the runtime can even execute minimal code. |
+| **Generated Forth host-access words** | Expands NanaST's Forth vocabulary and turns a test harness into an implicit target dependency. |
+| **BNC shared-memory or device host** | Unnecessarily couples this first compatibility gate to future BNC hardware and real-time work. |
+| **Raw-address access from NanaST** | Exposes rfopt internal memory layout and cannot enforce runtime lifetimes safely. |
 
 ## Verification
 
-Required future evidence is:
+To verify this gate, the project requires the following test evidence:
 
-- rfopt runtime-unit tests that prove loading, lookup, invocation, and opaque
-  cell-handle lifetime on AMD64 Linux.
-- `scripts/run-rfopt-target.sh`, which proves the rfopt submodule is clean and
-  matches the superproject gitlink before it starts Cargo.
-- A NanaST integration test that executes the complete pass-through sequence on
-  that pinned rfopt revision and proves every requirement acceptance item.
-- Error-path tests that prove missing words, invalid handles, and load or
-  lookup failures fail the gate with context.
+- **rfopt unit tests:** Prove source loading, word lookup, execution, and cell-handle lifetimes on AMD64 Linux.
+- **Gate runner script (`scripts/run-rfopt-target.sh`):** Verify that the rfopt submodule is clean and matches the pinned commit before running Cargo.
+- **NanaST integration test:** Execute the full pass-through sequence against the pinned rfopt revision and pass all acceptance criteria.
+- **Error-handling tests:** Prove that missing words, invalid handles, and syntax/lookup errors fail with clear diagnostics.
 
-No such evidence exists yet because the pinned rfopt revision does not build on
-AMD64. When it exists, it establishes compatibility only; it does not establish
-timing, memory, safety, BNC integration, or AArch64 behavior.
+> [!NOTE]
+> This evidence cannot be gathered yet because the pinned rfopt revision does not currently build on AMD64. Once tests pass, they prove basic compatibility only. They do not prove real-time timing, memory limits, safety properties, BNC integration, or AArch64 support.
 
 ## Detailed-Design Handoffs
 
-- **rfopt Rust API:** Specify opaque handle ownership, error types, runtime
-  creation, source parsing, and invalid-handle behavior.
-- **NanaST test integration:** Add a path development dependency on the pinned
-  rfopt submodule, `scripts/run-rfopt-target.sh` to validate its git state
-  before Cargo, and the AMD64 end-to-end test after rfopt exposes the API.
-- **rfopt AMD64 implementation:** Repair the existing architecture-specific
-  build boundary before either test can run.
+- **rfopt Rust API:** Specify opaque handle ownership, error enums, runtime creation, source parsing, and invalid-handle behavior.
+- **NanaST test integration:** Add a path development dependency on the pinned rfopt submodule, implement `scripts/run-rfopt-target.sh`, and write the AMD64 integration test once the API is exposed.
+- **rfopt AMD64 implementation:** Fix existing architecture-specific build issues before running tests.

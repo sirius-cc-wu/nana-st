@@ -2,9 +2,7 @@
 
 ## Documentation Artifact Layout
 
-Use a feature-iteration hybrid. Organize durable documentation by its current
-feature once a candidate direction has more than one maintained artifact; do
-not create empty taxonomy directories in anticipation of work.
+Use a feature-iteration hybrid structure. Organize long-term documentation by feature once an idea has more than one document. Do not create empty directories in advance.
 
 ```text
 docs/
@@ -20,19 +18,11 @@ docs/
   iterations/
 ```
 
-- `docs/VISION.md` is the single project-level vision.
-- `docs/SPEC-v<version>.md` holds a project-wide, versioned compiler or ABI
-  specification until several independently maintained specifications justify
-  their own directory.
-- `docs/ideas/` retains candidate-direction history. An accepted idea must link
-  to the current feature artifacts; it is not the owner of evolving approved
-  requirements.
-- `docs/features/<feature>/` owns active requirements, architecture, and
-  implementation-facing design for that feature.
-- Create `docs/verification/`, `docs/decisions/`, and `docs/iterations/` only
-  when an artifact of that kind is justified.
-- Do not create a directory per skill or artifact type merely because a skill
-  exists. Use an artifact-specific layout only after several independently
-  maintained artifacts make feature-local navigation inadequate.
-- Do not relocate existing documentation without an approved migration that
-  updates its links and preserves history.
+### Directory Guidelines
+- **`docs/VISION.md`:** The single project-wide vision document.
+- **`docs/SPEC-v<version>.md`:** Holds project-wide, versioned compiler or ABI specifications until multiple specifications justify their own subdirectories.
+- **`docs/ideas/`:** Preserves the history of proposed candidate directions. Once an idea is accepted, it must link to active feature artifacts rather than tracking changing requirements.
+- **`docs/features/<feature>/`:** Contains active requirements, architecture, and implementation designs for that specific feature.
+- **`docs/verification/`, `docs/decisions/`, and `docs/iterations/`:** Create these directories only when you have a specific artifact that requires them.
+- **No empty skill taxonomies:** Do not create folders simply because an agent skill or artifact type exists. Only split folders if navigating feature directories becomes unwieldy.
+- **Preserve history:** Do not move existing documentation without an approved plan that updates links and preserves file history.
