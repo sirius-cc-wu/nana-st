@@ -1,5 +1,16 @@
 # Repository Instructions
 
+## Documentation Writing Style
+
+All documentation and Markdown files must be written in a simple, readable technical English style. Follow these guidelines:
+
+- **Direct sentence structure:** Keep sentences concise and clear. Prefer active voice and standard Subject-Verb-Object (SVO) order.
+- **No grammatical inversions:** Avoid inverted phrases such as *"Only then does the runner start..."*. Use direct phrasing: *"Then, the runner starts..."*.
+- **Unpack dense noun stacks:** Avoid compressing multiple nouns together (e.g., *"in-process rfopt host boundary"*). Unpack them into descriptive phrases with clear prepositions.
+- **Avoid anthropomorphic idioms:** Do not use abstract idioms like *"the requirements own the behavior"* or *"AArch64 waits for AMD64"*. Write *"the requirements define the behavior"* and *"AArch64 support begins after AMD64 passes"*.
+- **Scannable formatting:** Use structured bullet points, numbered lists, and bold lead-ins for lists and tables to make information easy to find.
+- **Preserve precision:** Keep all technical contracts, numerical limits, exact types, and decision histories rigorous while keeping the prose simple.
+
 ## Documentation Artifact Layout
 
 Use a feature-iteration hybrid structure. Organize long-term documentation by feature once an idea has more than one document. Do not create empty directories in advance.
