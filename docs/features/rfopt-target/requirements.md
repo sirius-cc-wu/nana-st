@@ -141,7 +141,7 @@ The test must run on an AMD64 Linux development host with the rfopt submodule in
 
 ## Open Questions
 
-- Will Sirius Wu approve the proposed Rust types, ownership model, and error structures in [rust-lifecycle.md](rust-lifecycle.md) for rfopt's opaque host API?
+- The accepted Rust types, ownership model, and error structures for rfopt's opaque host API are in [rust-lifecycle.md](rust-lifecycle.md).
 - What exact command does `scripts/run-rfopt-target.sh` run after completing its pre-compilation checks?
 - Which rfopt commit will be the first to satisfy the word inventory and pass the gate?
 - Which real-world BNC control program will be used to define the subsequent real-time verification feature?

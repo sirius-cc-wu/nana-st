@@ -101,6 +101,6 @@ To verify this gate, the project requires the following test evidence:
 
 ## Detailed-Design Handoffs
 
-- **rfopt Rust API:** [rust-lifecycle.md](rust-lifecycle.md) proposes opaque handle ownership, error enums, runtime creation, source parsing, native-code lifetime, and invalid-handle behavior. Sirius Wu must approve that lifecycle design before implementation begins.
+- **rfopt Rust API:** The accepted [rust-lifecycle.md](rust-lifecycle.md) defines opaque handle ownership, error enums, runtime creation, source parsing, native-code lifetime, and invalid-handle behavior.
 - **NanaST test integration:** Add a path development dependency on the pinned rfopt submodule, implement `scripts/run-rfopt-target.sh`, and write the AMD64 integration test once the API is exposed.
-- **rfopt AMD64 implementation:** After lifecycle-design approval, implement the source loader, native emitter, opaque host API, and rfopt unit tests.
+- **rfopt AMD64 implementation:** Implement the source loader, native emitter, opaque host API, and rfopt unit tests from the accepted lifecycle design.

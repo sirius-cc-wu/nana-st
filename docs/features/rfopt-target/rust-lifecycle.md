@@ -3,7 +3,7 @@ type: "Rust Lifecycle Design"
 title: "Rust Lifecycle Design: rfopt AMD64 Host API"
 description: "Proposed ownership, native-code lifetime, opaque handles, and error behavior for the first rfopt host API."
 id: "rfopt-amd64-host-api-lifecycle"
-status: "proposed"
+status: "accepted"
 language: "rust"
 revision: "NanaST a625c6a; rfopt f8079fc"
 tags: [design, rust, lifecycle, rfopt, amd64, forth]
@@ -19,10 +19,11 @@ cells and executable allocations. `WordHandle` and `CellHandle` values expose
 safe host operations without exposing a dictionary pointer, a cell address, or
 a code pointer.
 
-Each handle stores a weak reference to its runtime state. A handle fails with a
-named invalid-handle error after its runtime drops. Source loading builds a
-complete private program before rfopt publishes any definitions or executable
-code. A failed load leaves the runtime empty.
+Sirius Wu approved this lifecycle design on 2026-09-06. Each handle stores a
+weak reference to its runtime state. A handle fails with a named invalid-handle
+error after its runtime drops. Source loading builds a complete private program
+before rfopt publishes any definitions or executable code. A failed load leaves
+the runtime empty.
 
 The first implementation supports only the inventory in
 [requirements.md](requirements.md). It does not provide a general interpreter,
@@ -396,16 +397,14 @@ replacing this model.
 
 ## Completion Boundary
 
-- **Result:** This proposed design does not yet authorize implementation or
+- **Result:** This accepted design authorizes rfopt implementation. It does not
   complete the AMD64 pass-through target.
-- **Evidence:** The proposal specifies ownership, invalid-handle behavior,
+- **Evidence:** The design specifies ownership, invalid-handle behavior,
   failure atomicity, native code lifetime, the API shape, ABI obligations, and
   unit-test obligations for the approved source subset.
-- **Approval gate:** Sirius Wu must approve this lifecycle design before rfopt
-  implements the public host API or native emitter described here.
-- **Remaining vertical gap:** rfopt must implement and test the accepted host
-  API. NanaST must then emit the source, add the gitlink runner, and prove the
-  full integration gate.
+- **Remaining vertical gap:** rfopt must implement and test the host API.
+  NanaST must then emit the source, add the gitlink runner, and prove the full
+  integration gate.
 
 ## Deferred Abstractions
 
