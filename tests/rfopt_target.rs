@@ -95,3 +95,121 @@ fn runs_the_boolean_pass_through_target_through_opaque_rfopt_handles() {
         .expect_err("invalid Forth should not load");
     assert!(load_error.to_string().contains("1:25"));
 }
+
+#[test]
+fn runs_multi_cycle_counter_state_and_resets() {
+    let generated = compile_forth_source(include_str!("fixtures/counter.st"))
+        .expect("counter fixture should compile to Forth");
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("generated counter source should load into rfopt runtime");
+
+    let count = runtime
+        .resolve_cell("nana-var-count")
+        .expect("count cell should resolve");
+    let out = runtime
+        .resolve_cell("nana-output-0")
+        .expect("output cell should resolve");
+    let init = runtime
+        .resolve_word("nana-init")
+        .expect("init word should resolve");
+    let scan = runtime
+        .resolve_word("nana-scan")
+        .expect("scan word should resolve");
+
+    // Before init, write dirty values
+    count.write(999).unwrap();
+    out.write(888).unwrap();
+
+    // After init, counter and output reset to 0
+    init.invoke().unwrap();
+    assert_eq!(count.read().unwrap(), 0);
+    assert_eq!(out.read().unwrap(), 0);
+
+    // Scan cycle 1: count := 0 + 1 = 1
+    scan.invoke().unwrap();
+    assert_eq!(count.read().unwrap(), 1);
+    assert_eq!(out.read().unwrap(), 1);
+
+    // Scan cycle 2: count := 1 + 1 = 2
+    scan.invoke().unwrap();
+    assert_eq!(count.read().unwrap(), 2);
+    assert_eq!(out.read().unwrap(), 2);
+
+    // Scan cycle 3: count := 2 + 1 = 3
+    scan.invoke().unwrap();
+    assert_eq!(count.read().unwrap(), 3);
+    assert_eq!(out.read().unwrap(), 3);
+
+    // Reset via init again
+    init.invoke().unwrap();
+    assert_eq!(count.read().unwrap(), 0);
+    assert_eq!(out.read().unwrap(), 0);
+
+    // Scan cycle after reset: count := 0 + 1 = 1
+    scan.invoke().unwrap();
+    assert_eq!(count.read().unwrap(), 1);
+    assert_eq!(out.read().unwrap(), 1);
+}
+
+#[test]
+fn runs_arithmetic_and_comparison_expressions() {
+    let source = "PROGRAM Calc
+VAR_INPUT
+    a : INT;
+    b : INT;
+END_VAR
+VAR_OUTPUT
+    sum : INT;
+    diff : INT;
+    prod : INT;
+    quot : INT;
+    is_greater : BOOL;
+END_VAR
+
+sum := a + b;
+diff := a - b;
+prod := a * b;
+quot := a / b;
+is_greater := a > b;
+END_PROGRAM";
+
+    let generated = compile_forth_source(source).expect("source should compile to Forth");
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("generated source should load into rfopt runtime");
+
+    let a = runtime.resolve_cell("nana-input-0").unwrap();
+    let b = runtime.resolve_cell("nana-input-1").unwrap();
+    let sum = runtime.resolve_cell("nana-output-0").unwrap();
+    let diff = runtime.resolve_cell("nana-output-1").unwrap();
+    let prod = runtime.resolve_cell("nana-output-2").unwrap();
+    let quot = runtime.resolve_cell("nana-output-3").unwrap();
+    let is_greater = runtime.resolve_cell("nana-output-4").unwrap();
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    init.invoke().unwrap();
+    a.write(20).unwrap();
+    b.write(6).unwrap();
+    scan.invoke().unwrap();
+
+    assert_eq!(sum.read().unwrap(), 26);
+    assert_eq!(diff.read().unwrap(), 14);
+    assert_eq!(prod.read().unwrap(), 120);
+    assert_eq!(quot.read().unwrap(), 3);
+    assert_eq!(is_greater.read().unwrap(), 1);
+
+    // Update inputs
+    a.write(5).unwrap();
+    b.write(10).unwrap();
+    scan.invoke().unwrap();
+
+    assert_eq!(sum.read().unwrap(), 15);
+    assert_eq!(diff.read().unwrap(), -5);
+    assert_eq!(prod.read().unwrap(), 50);
+    assert_eq!(quot.read().unwrap(), 0);
+    assert_eq!(is_greater.read().unwrap(), 0);
+}
