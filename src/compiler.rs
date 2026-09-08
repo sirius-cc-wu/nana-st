@@ -5,7 +5,6 @@ use crate::forth::{ForthError, emit as emit_forth};
 use crate::lexer::{LexError, lex};
 use crate::parser::{ParseError, parse};
 use crate::sema::{AnalyzedProgram, SemanticError, analyze};
-use crate::wasm::{WasmError, emit};
 
 #[derive(Debug)]
 pub enum CompileError {
@@ -13,7 +12,6 @@ pub enum CompileError {
     Parse(ParseError),
     Semantic(SemanticError),
     Forth(ForthError),
-    Wasm(WasmError),
 }
 
 impl fmt::Display for CompileError {
@@ -23,7 +21,6 @@ impl fmt::Display for CompileError {
             Self::Parse(error) => error.fmt(formatter),
             Self::Semantic(error) => error.fmt(formatter),
             Self::Forth(error) => error.fmt(formatter),
-            Self::Wasm(error) => error.fmt(formatter),
         }
     }
 }
@@ -35,19 +32,17 @@ impl Error for CompileError {
             Self::Parse(error) => Some(error),
             Self::Semantic(error) => Some(error),
             Self::Forth(error) => Some(error),
-            Self::Wasm(error) => Some(error),
         }
     }
 }
 
-pub fn compile_source(source: &str) -> Result<Vec<u8>, CompileError> {
+pub fn compile_source(source: &str) -> Result<String, CompileError> {
     let program = analyze_source(source)?;
-    emit(&program).map_err(CompileError::Wasm)
+    emit_forth(&program).map_err(CompileError::Forth)
 }
 
 pub fn compile_forth_source(source: &str) -> Result<String, CompileError> {
-    let program = analyze_source(source)?;
-    emit_forth(&program).map_err(CompileError::Forth)
+    compile_source(source)
 }
 
 fn analyze_source(source: &str) -> Result<AnalyzedProgram, CompileError> {

@@ -10,16 +10,12 @@ fn args(parts: &[&str]) -> Vec<String> {
 
 #[test]
 fn parses_a_compile_command_with_an_output_path() {
-    let command = parse_compile_command(&args(&[
-        "compile",
-        "program.st",
-        "--output",
-        "program.wasm",
-    ]))
-    .expect("compile command should parse");
+    let command =
+        parse_compile_command(&args(&["compile", "program.st", "--output", "program.fs"]))
+            .expect("compile command should parse");
 
     assert_eq!(command.input, PathBuf::from("program.st"));
-    assert_eq!(command.output, PathBuf::from("program.wasm"));
+    assert_eq!(command.output, PathBuf::from("program.fs"));
 }
 
 #[test]
@@ -64,7 +60,7 @@ fn reports_an_unreadable_source_file() {
         "compile",
         "does-not-exist.st",
         "--output",
-        "program.wasm",
+        "program.fs",
     ]))
     .expect_err("missing input should fail");
 
@@ -78,10 +74,10 @@ fn does_not_write_output_when_compilation_fails() {
     fs::create_dir_all(&test_directory).expect("test directory should be created");
 
     let source = test_directory.join("program.st");
-    let output = test_directory.join("program.wasm");
+    let output = test_directory.join("program.fs");
     fs::write(&source, "PROGRAM Main missing := TRUE; END_PROGRAM")
         .expect("source should be written");
-    fs::write(&output, b"stale Wasm output").expect("stale output should be written");
+    fs::write(&output, b"stale Forth output").expect("stale output should be written");
 
     let error = run(&args(&[
         "compile",
@@ -94,7 +90,7 @@ fn does_not_write_output_when_compilation_fails() {
     assert!(matches!(error, CliError::Compile { .. }));
     assert_eq!(
         fs::read(&output).expect("existing output should be preserved"),
-        b"stale Wasm output"
+        b"stale Forth output"
     );
 
     fs::remove_dir_all(test_directory).expect("test directory should be removed");
@@ -138,7 +134,7 @@ fn rejects_a_hard_link_to_the_source_as_output() {
     fs::create_dir_all(&test_directory).expect("test directory should be created");
 
     let source = test_directory.join("program.st");
-    let output = test_directory.join("program.wasm");
+    let output = test_directory.join("program.fs");
     let source_text = "PROGRAM Main END_PROGRAM";
     fs::write(&source, source_text).expect("source should be written");
     fs::hard_link(&source, &output).expect("output hard link should be created");
@@ -161,14 +157,14 @@ fn rejects_a_hard_link_to_the_source_as_output() {
 }
 
 #[test]
-fn nanastc_binary_writes_wasm_for_valid_source() {
+fn nanastc_binary_writes_forth_for_valid_source() {
     let test_directory =
         std::env::temp_dir().join(format!("nana-st-cli-success-{}", std::process::id()));
     let _ = fs::remove_dir_all(&test_directory);
     fs::create_dir_all(&test_directory).expect("test directory should be created");
 
     let source = test_directory.join("program.st");
-    let output = test_directory.join("program.wasm");
+    let output = test_directory.join("program.fs");
     fs::write(&source, include_str!("fixtures/pass_through.st")).expect("source should be written");
     fs::write(&output, b"previous output").expect("previous output should be written");
 
@@ -187,8 +183,9 @@ fn nanastc_binary_writes_wasm_for_valid_source() {
         "stderr: {}",
         String::from_utf8_lossy(&result.stderr)
     );
-    let wasm = fs::read(&output).expect("Wasm output should exist");
-    assert_eq!(&wasm[..4], b"\0asm");
+    let forth = fs::read_to_string(&output).expect("Forth output should exist");
+    assert!(forth.contains(": nana-init"));
+    assert!(forth.contains(": nana-scan"));
 
     fs::remove_dir_all(test_directory).expect("test directory should be removed");
 }

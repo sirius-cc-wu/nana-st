@@ -100,11 +100,11 @@ pub fn run(args: &[String]) -> Result<(), CliError> {
         ));
     }
 
-    let wasm = compile_source(&source).map_err(|source| CliError::Compile {
+    let forth = compile_source(&source).map_err(|source| CliError::Compile {
         path: command.input.clone(),
         source,
     })?;
-    write_output_atomically(&command.output, &wasm)
+    write_output_atomically(&command.output, forth.as_bytes())
 }
 
 fn output_aliases_input(input: &Path, output: &Path) -> Result<bool, CliError> {
@@ -145,7 +145,7 @@ fn output_aliases_input(input: &Path, output: &Path) -> Result<bool, CliError> {
     }
 }
 
-fn write_output_atomically(path: &Path, wasm: &[u8]) -> Result<(), CliError> {
+fn write_output_atomically(path: &Path, content: &[u8]) -> Result<(), CliError> {
     let directory = path
         .parent()
         .filter(|path| !path.as_os_str().is_empty())
@@ -172,7 +172,7 @@ fn write_output_atomically(path: &Path, wasm: &[u8]) -> Result<(), CliError> {
             }
         };
 
-        if let Err(source) = file.write_all(wasm).and_then(|()| file.sync_all()) {
+        if let Err(source) = file.write_all(content).and_then(|()| file.sync_all()) {
             drop(file);
             let _ = fs::remove_file(&temporary);
             return Err(CliError::WriteOutput {
@@ -202,5 +202,5 @@ fn write_output_atomically(path: &Path, wasm: &[u8]) -> Result<(), CliError> {
 }
 
 fn usage() -> String {
-    "usage: nanastc compile <input.st> --output <output.wasm>".to_owned()
+    "usage: nanastc compile <input.st> --output <output.fs>".to_owned()
 }

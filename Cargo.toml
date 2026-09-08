@@ -8,8 +8,7 @@ name = "nanastc"
 path = "src/main.rs"
 
 [dependencies]
-wasm-encoder = "0.258.0"
 
 [dev-dependencies]
 rfopt = { path = "rfopt" }
-wasmtime = "=45.0.1"
+
