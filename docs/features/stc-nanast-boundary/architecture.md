@@ -57,6 +57,10 @@ responsibility of `A64Emitter::build_executable`.
 - rfopt unit tests validate the boundary's source, handle, ownership, and W^X
   behavior.
 - `tests/rfopt_target.rs` retains the compiler-to-runtime vertical scenarios.
+- `scripts/run-native-amd64-evidence.sh` requires native `x86_64` Linux, runs
+  the rfopt suite, then runs the clean, pinned-submodule integration gate.
+  `.github/workflows/native-amd64-evidence.yml` runs this evidence on
+  `ubuntu-24.04` for pull requests and changes to `main`.
 - The integration script runs on both supported Linux architectures.
 - AArch64 execution evidence verifies emitted instructions under an AArch64
   runtime; cross-compilation alone does not prove this boundary.

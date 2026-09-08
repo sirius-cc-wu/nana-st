@@ -69,10 +69,13 @@ any cell writes that preceded the error.
    arithmetic/comparison scenarios through `rfopt::nanast`.
 2. rfopt unit tests cover source validation, atomic load behavior, handle
    lifetime, cell sharing, arithmetic, comparisons, and W^X executable memory.
-3. The rfopt test suite executes the boundary on AMD64.
-4. An AArch64 execution gate runs the same `nanast` unit tests on AArch64
+3. The native AMD64 evidence runner executes the rfopt test suite and the
+   NanaST integration gate on an `x86_64` Linux host.
+4. GitHub Actions runs that runner on `ubuntu-24.04` for pull requests and
+   changes to `main`. The runner rejects every host that is not Linux AMD64.
+5. An AArch64 execution gate runs the same `nanast` unit tests on AArch64
    hardware or an AArch64 emulator with a Linux userspace.
-5. `scripts/run-rfopt-target.sh` permits AMD64 and AArch64 Linux hosts while it
+6. `scripts/run-rfopt-target.sh` permits AMD64 and AArch64 Linux hosts while it
    continues to require a clean, pinned rfopt submodule.
 
 ## Boundaries
@@ -88,4 +91,6 @@ any cell writes that preceded the error.
 - [NanaST vision](../../VISION.md)
 - [Generalized Forth code generation](../forth-codegen/requirements.md)
 - [Retirement decision](../../decisions/retire-rfopt-host-api.md)
+- [`scripts/run-native-amd64-evidence.sh`](../../../scripts/run-native-amd64-evidence.sh)
+- [Native AMD64 CI workflow](../../../.github/workflows/native-amd64-evidence.yml)
 - [Superseded AMD64 host requirements](../rfopt-target/requirements.md)

@@ -1,0 +1,26 @@
+name: Native AMD64 evidence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rfopt-gates:
+    name: rfopt gates on AMD64 Linux
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the pinned rfopt submodule
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Select stable Rust
+        run: rustup default stable
+
+      - name: Run rfopt unit and NanaST integration gates
+        run: ./scripts/run-native-amd64-evidence.sh
