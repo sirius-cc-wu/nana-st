@@ -72,7 +72,9 @@ any cell writes that preceded the error.
 3. The native AMD64 evidence runner executes the rfopt test suite and the
    NanaST integration gate on an `x86_64` Linux host.
 4. GitHub Actions runs that runner on `ubuntu-24.04` for pull requests and
-   changes to `main`. The runner rejects every host that is not Linux AMD64.
+   changes to `main`. The `RFOPT_SUBMODULE_TOKEN` repository secret provides
+   read access to the private pinned submodule. The runner rejects every host
+   that is not Linux AMD64.
 5. An AArch64 execution gate runs the same `nanast` unit tests on AArch64
    hardware or an AArch64 emulator with a Linux userspace.
 6. `scripts/run-rfopt-target.sh` permits AMD64 and AArch64 Linux hosts while it

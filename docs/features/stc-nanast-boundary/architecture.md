@@ -60,7 +60,8 @@ responsibility of `A64Emitter::build_executable`.
 - `scripts/run-native-amd64-evidence.sh` requires native `x86_64` Linux, runs
   the rfopt suite, then runs the clean, pinned-submodule integration gate.
   `.github/workflows/native-amd64-evidence.yml` runs this evidence on
-  `ubuntu-24.04` for pull requests and changes to `main`.
+  `ubuntu-24.04` for pull requests and changes to `main`. It uses the
+  `RFOPT_SUBMODULE_TOKEN` repository secret to read the private submodule.
 - The integration script runs on both supported Linux architectures.
 - AArch64 execution evidence verifies emitted instructions under an AArch64
   runtime; cross-compilation alone does not prove this boundary.

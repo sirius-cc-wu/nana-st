@@ -14,10 +14,21 @@ jobs:
     name: rfopt gates on AMD64 Linux
     runs-on: ubuntu-24.04
     steps:
-      - name: Check out the pinned rfopt submodule
+      - name: Check out NanaST
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: false
+
+      - name: Check out the pinned rfopt submodule
+        env:
+          RFOPT_SUBMODULE_TOKEN: ${{ secrets.RFOPT_SUBMODULE_TOKEN }}
+        run: |
+          if [[ -z "$RFOPT_SUBMODULE_TOKEN" ]]; then
+            printf '%s\n' 'RFOPT_SUBMODULE_TOKEN must grant Contents: Read access to rfopt.' >&2
+            exit 1
+          fi
+          git -c "url.https://x-access-token:${RFOPT_SUBMODULE_TOKEN}@github.com/.insteadOf=git@github.com:" \
+            submodule update --init --recursive
 
       - name: Select stable Rust
         run: rustup default stable
