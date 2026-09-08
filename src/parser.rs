@@ -138,9 +138,10 @@ impl Parser {
             TokenKind::Bool => Ok(DataType::Bool),
             TokenKind::Int => Ok(DataType::Int),
             TokenKind::Dint => Ok(DataType::Dint),
+            TokenKind::Real => Ok(DataType::Real),
             _ => Err(ParseError {
                 span: token.span,
-                message: "expected one of 'BOOL', 'INT', or 'DINT'".to_owned(),
+                message: "expected one of 'BOOL', 'INT', 'DINT', or 'REAL'".to_owned(),
             }),
         }
     }
@@ -285,6 +286,10 @@ impl Parser {
             }),
             TokenKind::Integer(literal) => Ok(Expression {
                 kind: ExpressionKind::Integer(literal),
+                span: token.span,
+            }),
+            TokenKind::RealLiteral(literal) => Ok(Expression {
+                kind: ExpressionKind::Real(literal),
                 span: token.span,
             }),
             TokenKind::Identifier(name) => Ok(Expression {

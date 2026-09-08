@@ -75,6 +75,19 @@ fn lexes_operators_and_skips_block_comments() {
 }
 
 #[test]
+fn lexes_real_type_and_decimal_exponent_literals() {
+    let tokens = lex("PROGRAM Main VAR value : REAL; END_VAR value := 1.25E-3; END_PROGRAM")
+        .expect("REAL source should lex");
+
+    assert!(tokens.iter().any(|token| token.kind == TokenKind::Real));
+    assert!(
+        tokens
+            .iter()
+            .any(|token| { token.kind == TokenKind::RealLiteral("1.25E-3".to_owned()) })
+    );
+}
+
+#[test]
 fn reports_the_location_of_an_invalid_character() {
     let error = lex("PROGRAM @").expect_err("invalid character should fail");
 

@@ -100,6 +100,35 @@ fn runs_the_boolean_pass_through_target_through_opaque_rfopt_handles() {
 }
 
 #[test]
+fn runs_real_arithmetic_and_branches_through_opaque_float_handles() {
+    let generated = compile_forth_source(include_str!("fixtures/real_branch.st"))
+        .expect("REAL fixture should compile to Forth");
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("generated REAL source should load into rfopt runtime");
+
+    let input = runtime.resolve_float_cell("nana-input-0").unwrap();
+    let output = runtime.resolve_float_cell("nana-output-0").unwrap();
+    let high = runtime.resolve_cell("nana-output-1").unwrap();
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    init.invoke().unwrap();
+    assert_eq!(output.read().unwrap(), 0.0);
+
+    input.write(8.5).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(output.read().unwrap(), 10.0);
+    assert_eq!(high.read().unwrap(), 1);
+
+    input.write(2.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(output.read().unwrap(), 3.5);
+    assert_eq!(high.read().unwrap(), 0);
+}
+
+#[test]
 fn runs_multi_cycle_counter_state_and_resets() {
     let generated = compile_forth_source(include_str!("fixtures/counter.st"))
         .expect("counter fixture should compile to Forth");

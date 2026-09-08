@@ -245,6 +245,48 @@ fn diagnoses_out_of_range_folded_int_constants() {
 }
 
 #[test]
+fn accepts_real_arithmetic_but_rejects_implicit_numeric_conversions() {
+    let real_program = analyze_source(
+        "PROGRAM Main
+         VAR
+             value : REAL := 1.5;
+             negative : REAL := -0.5;
+         END_VAR
+         VAR_OUTPUT
+             active : BOOL;
+         END_VAR
+         value := value + 2.5;
+         active := value >= 4.0;
+         END_PROGRAM",
+    );
+    assert_eq!(real_program.variables[0].data_type, DataType::Real);
+    assert_eq!(real_program.variables[1].data_type, DataType::Real);
+
+    let tokens = lex("PROGRAM Main
+         VAR
+             integer : DINT;
+             floating : REAL;
+         END_VAR
+         floating := integer + 1.0;
+         END_PROGRAM")
+    .expect("source should lex");
+    let error = analyze(parse(tokens).expect("source should parse"))
+        .expect_err("mixed integer and REAL arithmetic should fail");
+    assert!(error.message.contains("expected REAL"));
+
+    let tokens = lex("PROGRAM Main
+         VAR
+             value : REAL;
+         END_VAR
+         IF value THEN END_IF
+         END_PROGRAM")
+    .expect("source should lex");
+    let error = analyze(parse(tokens).expect("source should parse"))
+        .expect_err("REAL IF condition should fail");
+    assert!(error.message.contains("expected BOOL"));
+}
+
+#[test]
 fn rejects_nonliteral_var_initializers() {
     let tokens = lex("PROGRAM Main VAR value : INT := 1 + 2; END_VAR END_PROGRAM")
         .expect("source should lex");

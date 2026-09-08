@@ -38,6 +38,7 @@ pub enum TokenKind {
     Bool,
     Int,
     Dint,
+    Real,
     True,
     False,
     If,
@@ -49,6 +50,7 @@ pub enum TokenKind {
     Not,
     Identifier(String),
     Integer(String),
+    RealLiteral(String),
     Assign,
     Colon,
     Semicolon,
@@ -84,6 +86,7 @@ pub enum DataType {
     Bool,
     Int,
     Dint,
+    Real,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -132,6 +135,7 @@ pub struct Expression {
 pub enum ExpressionKind {
     Boolean(bool),
     Integer(String),
+    Real(String),
     Variable(Identifier),
     Unary {
         operator: UnaryOperator,

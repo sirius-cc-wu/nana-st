@@ -72,6 +72,7 @@ pub struct AnalyzedExpression {
 pub enum AnalyzedExpressionKind {
     Boolean(bool),
     Integer(i32),
+    Real(String),
     Variable {
         variable: usize,
     },
@@ -144,13 +145,13 @@ pub fn analyze(program: Program) -> Result<AnalyzedProgram, SemanticError> {
 fn is_literal_initializer(expression: &Expression) -> bool {
     matches!(
         expression.kind,
-        ExpressionKind::Boolean(_) | ExpressionKind::Integer(_)
+        ExpressionKind::Boolean(_) | ExpressionKind::Integer(_) | ExpressionKind::Real(_)
     ) || matches!(
         expression.kind,
         ExpressionKind::Unary {
             operator: UnaryOperator::Negate,
             expression: ref operand,
-        } if matches!(operand.kind, ExpressionKind::Integer(_))
+        } if matches!(operand.kind, ExpressionKind::Integer(_) | ExpressionKind::Real(_))
     )
 }
 
@@ -263,6 +264,7 @@ fn analyze_expression(
         ExpressionKind::Integer(literal) => {
             analyze_integer_literal(literal, expression.span, expected_type, false)?
         }
+        ExpressionKind::Real(literal) => analyze_real_literal(literal, expression.span)?,
         ExpressionKind::Variable(identifier) => {
             let variable = resolve_variable(identifier, variables)?;
             let variable_data = &variables[variable];
@@ -339,11 +341,15 @@ fn analyze_unary(
             let operand = analyze_expression(operand, variables, numeric_expected)?;
             require_numeric(&operand)?;
             let data_type = operand.data_type;
-            let constant = operand
-                .constant
-                .as_ref()
-                .map(|value| numeric_constant(-numeric_value(value), data_type, span))
-                .transpose()?;
+            let constant = if data_type == DataType::Real {
+                None
+            } else {
+                operand
+                    .constant
+                    .as_ref()
+                    .map(|value| numeric_constant(-numeric_value(value), data_type, span))
+                    .transpose()?
+            };
 
             Ok(AnalyzedExpression {
                 kind: AnalyzedExpressionKind::Unary {
@@ -481,7 +487,7 @@ fn analyze_equality_operands(
             let right = analyze_expression(right, variables, Some(DataType::Bool))?;
             Ok((left, right))
         }
-        DataType::Int | DataType::Dint => {
+        DataType::Int | DataType::Dint | DataType::Real => {
             let right = analyze_expression(right, variables, Some(left.data_type))?;
             Ok((left, right))
         }
@@ -564,7 +570,7 @@ fn analyze_integer_literal(
     is_negative: bool,
 ) -> Result<AnalyzedExpression, SemanticError> {
     let data_type = expected_type.unwrap_or(DataType::Dint);
-    if !data_type.is_numeric() {
+    if !matches!(data_type, DataType::Int | DataType::Dint) {
         return Err(type_mismatch(span, data_type, DataType::Dint));
     }
 
@@ -579,6 +585,26 @@ fn analyze_integer_literal(
         kind: AnalyzedExpressionKind::Integer(value as i32),
         data_type,
         constant: Some(constant),
+        span,
+    })
+}
+
+fn analyze_real_literal(literal: &str, span: Span) -> Result<AnalyzedExpression, SemanticError> {
+    let value = literal.parse::<f64>().map_err(|_| SemanticError {
+        span,
+        message: format!("invalid REAL literal '{literal}'"),
+    })?;
+    if !value.is_finite() {
+        return Err(SemanticError {
+            span,
+            message: format!("REAL literal '{literal}' is outside the binary64 range"),
+        });
+    }
+
+    Ok(AnalyzedExpression {
+        kind: AnalyzedExpressionKind::Real(literal.to_owned()),
+        data_type: DataType::Real,
+        constant: None,
         span,
     })
 }
@@ -629,7 +655,9 @@ fn numeric_constant(
                     message: format!("constant result {value} is outside the DINT range"),
                 })
         }
-        DataType::Bool => unreachable!("numeric constant requested for BOOL"),
+        DataType::Bool | DataType::Real => {
+            unreachable!("numeric constant requested for BOOL or REAL")
+        }
     }
 }
 
@@ -671,7 +699,7 @@ fn require_numeric(expression: &AnalyzedExpression) -> Result<(), SemanticError>
         Err(SemanticError {
             span: expression.span,
             message: format!(
-                "expected INT or DINT but found {}",
+                "expected INT, DINT, or REAL but found {}",
                 expression.data_type.name()
             ),
         })
@@ -687,7 +715,7 @@ fn type_mismatch(span: Span, expected: DataType, found: DataType) -> SemanticErr
 
 fn integer_semantics(data_type: DataType) -> Option<IntegerSemantics> {
     match data_type {
-        DataType::Bool => None,
+        DataType::Bool | DataType::Real => None,
         DataType::Int => Some(IntegerSemantics::IntWrapping),
         DataType::Dint => Some(IntegerSemantics::DintWrapping),
     }
@@ -728,7 +756,7 @@ fn compare(operator: BinaryOperator, left: i64, right: i64) -> bool {
 
 impl DataType {
     fn is_numeric(self) -> bool {
-        matches!(self, Self::Int | Self::Dint)
+        matches!(self, Self::Int | Self::Dint | Self::Real)
     }
 
     fn name(self) -> &'static str {
@@ -736,6 +764,7 @@ impl DataType {
             Self::Bool => "BOOL",
             Self::Int => "INT",
             Self::Dint => "DINT",
+            Self::Real => "REAL",
         }
     }
 }

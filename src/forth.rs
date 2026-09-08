@@ -35,7 +35,12 @@ impl<'a> ForthEmitter<'a> {
 
         let mut declarations = Vec::new();
         for variable in &self.program.variables {
-            declarations.push(format!("VARIABLE {}", Self::variable_name(variable)));
+            let declaration = if variable.data_type == DataType::Real {
+                "FVARIABLE"
+            } else {
+                "VARIABLE"
+            };
+            declarations.push(format!("{declaration} {}", Self::variable_name(variable)));
         }
         if !declarations.is_empty() {
             parts.push(declarations.join(" "));
@@ -45,18 +50,16 @@ impl<'a> ForthEmitter<'a> {
         for variable in &self.program.variables {
             match variable.storage {
                 StorageClass::Output => {
-                    init_tokens.push("0".to_string());
-                    init_tokens.push(Self::variable_name(variable));
-                    init_tokens.push("!".to_string());
+                    Self::emit_zero(variable, &mut init_tokens);
+                    Self::emit_store(variable, &mut init_tokens);
                 }
                 StorageClass::Local => {
                     if let Some(initializer) = &variable.initializer {
                         self.emit_expression(initializer, &mut init_tokens)?;
                     } else {
-                        init_tokens.push("0".to_string());
+                        Self::emit_zero(variable, &mut init_tokens);
                     }
-                    init_tokens.push(Self::variable_name(variable));
-                    init_tokens.push("!".to_string());
+                    Self::emit_store(variable, &mut init_tokens);
                 }
                 StorageClass::Input => {}
             }
@@ -98,8 +101,7 @@ impl<'a> ForthEmitter<'a> {
                         "THEN".to_string(),
                     ]);
                 }
-                tokens.push(Self::variable_name(target_var));
-                tokens.push("!".to_string());
+                Self::emit_store(target_var, tokens);
             }
             AnalyzedStatementKind::If {
                 condition,
@@ -140,6 +142,7 @@ impl<'a> ForthEmitter<'a> {
             AnalyzedExpressionKind::Integer(value) => {
                 tokens.push(value.to_string());
             }
+            AnalyzedExpressionKind::Real(value) => tokens.push(value.clone()),
             AnalyzedExpressionKind::Variable { variable } => {
                 let var = self
                     .program
@@ -149,7 +152,14 @@ impl<'a> ForthEmitter<'a> {
                         message: format!("variable index {variable} out of bounds"),
                     })?;
                 tokens.push(Self::variable_name(var));
-                tokens.push("@".to_string());
+                tokens.push(
+                    if var.data_type == DataType::Real {
+                        "F@"
+                    } else {
+                        "@"
+                    }
+                    .to_string(),
+                );
             }
             AnalyzedExpressionKind::Unary {
                 operator,
@@ -159,7 +169,14 @@ impl<'a> ForthEmitter<'a> {
                 self.emit_expression(expression, tokens)?;
                 match operator {
                     UnaryOperator::Not => tokens.push("0=".to_string()),
-                    UnaryOperator::Negate => tokens.push("NEGATE".to_string()),
+                    UnaryOperator::Negate => tokens.push(
+                        if expression.data_type == DataType::Real {
+                            "FNEGATE"
+                        } else {
+                            "NEGATE"
+                        }
+                        .to_string(),
+                    ),
                 }
             }
             AnalyzedExpressionKind::Binary {
@@ -170,7 +187,7 @@ impl<'a> ForthEmitter<'a> {
             } => {
                 self.emit_expression(left, tokens)?;
                 self.emit_expression(right, tokens)?;
-                self.emit_binary_operator(*operator, tokens);
+                self.emit_binary_operator(*operator, left.data_type == DataType::Real, tokens);
             }
         }
         Ok(())
@@ -184,7 +201,30 @@ impl<'a> ForthEmitter<'a> {
         }
     }
 
-    fn emit_binary_operator(&self, operator: BinaryOperator, tokens: &mut Vec<String>) {
+    fn emit_binary_operator(
+        &self,
+        operator: BinaryOperator,
+        float_operands: bool,
+        tokens: &mut Vec<String>,
+    ) {
+        if float_operands {
+            let word = match operator {
+                BinaryOperator::Add => "F+",
+                BinaryOperator::Subtract => "F-",
+                BinaryOperator::Multiply => "F*",
+                BinaryOperator::Divide => "F/",
+                BinaryOperator::Equal => "F=",
+                BinaryOperator::NotEqual => "F<>",
+                BinaryOperator::Less => "F<",
+                BinaryOperator::LessOrEqual => "F<=",
+                BinaryOperator::Greater => "F>",
+                BinaryOperator::GreaterOrEqual => "F>=",
+                BinaryOperator::And | BinaryOperator::Or => unreachable!("float logic is invalid"),
+            };
+            tokens.push(word.to_string());
+            return;
+        }
+
         match operator {
             BinaryOperator::Add => tokens.push("+".to_string()),
             BinaryOperator::Subtract => tokens.push("-".to_string()),
@@ -199,6 +239,29 @@ impl<'a> ForthEmitter<'a> {
             BinaryOperator::LessOrEqual => tokens.extend([">".to_string(), "0=".to_string()]),
             BinaryOperator::GreaterOrEqual => tokens.extend(["<".to_string(), "0=".to_string()]),
         }
+    }
+
+    fn emit_zero(variable: &AnalyzedVariable, tokens: &mut Vec<String>) {
+        tokens.push(
+            if variable.data_type == DataType::Real {
+                "0.0"
+            } else {
+                "0"
+            }
+            .to_string(),
+        );
+    }
+
+    fn emit_store(variable: &AnalyzedVariable, tokens: &mut Vec<String>) {
+        tokens.push(Self::variable_name(variable));
+        tokens.push(
+            if variable.data_type == DataType::Real {
+                "F!"
+            } else {
+                "!"
+            }
+            .to_string(),
+        );
     }
 
     fn variable_name(variable: &AnalyzedVariable) -> String {

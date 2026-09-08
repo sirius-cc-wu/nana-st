@@ -52,7 +52,7 @@ impl<'source> Lexer<'source> {
             let start = self.position;
             let kind = match character {
                 character if is_identifier_start(character) => self.lex_identifier_or_keyword(),
-                character if character.is_ascii_digit() => self.lex_integer(),
+                character if character.is_ascii_digit() => self.lex_number(start)?,
                 '(' if self.peek_next_is('*') => {
                     self.skip_block_comment(start)?;
                     continue;
@@ -104,6 +104,7 @@ impl<'source> Lexer<'source> {
             "BOOL" => TokenKind::Bool,
             "INT" => TokenKind::Int,
             "DINT" => TokenKind::Dint,
+            "REAL" => TokenKind::Real,
             "TRUE" => TokenKind::True,
             "FALSE" => TokenKind::False,
             "IF" => TokenKind::If,
@@ -117,8 +118,9 @@ impl<'source> Lexer<'source> {
         }
     }
 
-    fn lex_integer(&mut self) -> TokenKind {
+    fn lex_number(&mut self, start: Position) -> Result<TokenKind, LexError> {
         let mut literal = String::new();
+        let mut is_real = false;
 
         while self
             .peek()
@@ -127,7 +129,47 @@ impl<'source> Lexer<'source> {
             literal.push(self.next().expect("peeked character should exist"));
         }
 
-        TokenKind::Integer(literal)
+        if self.peek() == Some('.') {
+            is_real = true;
+            literal.push(self.next().expect("peeked decimal point should exist"));
+            while self
+                .peek()
+                .is_some_and(|character| character.is_ascii_digit())
+            {
+                literal.push(self.next().expect("peeked character should exist"));
+            }
+        }
+
+        if matches!(self.peek(), Some('E' | 'e')) {
+            is_real = true;
+            literal.push(self.next().expect("peeked exponent marker should exist"));
+            if matches!(self.peek(), Some('+' | '-')) {
+                literal.push(self.next().expect("peeked exponent sign should exist"));
+            }
+
+            let exponent_start = literal.len();
+            while self
+                .peek()
+                .is_some_and(|character| character.is_ascii_digit())
+            {
+                literal.push(self.next().expect("peeked character should exist"));
+            }
+            if literal.len() == exponent_start {
+                return Err(LexError {
+                    span: Span {
+                        start,
+                        end: self.position,
+                    },
+                    message: format!("invalid REAL literal '{literal}'"),
+                });
+            }
+        }
+
+        Ok(if is_real {
+            TokenKind::RealLiteral(literal)
+        } else {
+            TokenKind::Integer(literal)
+        })
     }
 
     fn skip_block_comment(&mut self, start: Position) -> Result<(), LexError> {

@@ -101,6 +101,32 @@ fn emits_if_else_control_flow() {
 }
 
 #[test]
+fn emits_real_variables_arithmetic_and_comparisons() {
+    let generated = compile_forth_source(
+        "PROGRAM RealMath
+         VAR_INPUT
+             input : REAL;
+         END_VAR
+         VAR
+             offset : REAL := 1.5;
+         END_VAR
+         VAR_OUTPUT
+             output : REAL;
+             high : BOOL;
+         END_VAR
+         output := input + offset;
+         high := output >= 10.0;
+         END_PROGRAM",
+    )
+    .expect("REAL program should compile to Forth");
+
+    assert_eq!(
+        generated,
+        "FVARIABLE nana-input-0 FVARIABLE nana-var-offset FVARIABLE nana-output-0 VARIABLE nana-output-1 : nana-init 1.5 nana-var-offset F! 0.0 nana-output-0 F! 0 nana-output-1 ! ; : nana-scan nana-input-0 F@ nana-var-offset F@ F+ nana-output-0 F! nana-output-0 F@ 10.0 F>= IF 1 ELSE 0 THEN nana-output-1 ! ;"
+    );
+}
+
+#[test]
 fn emits_local_variables_and_initializers() {
     let generated = compile_forth_source(
         "PROGRAM State
