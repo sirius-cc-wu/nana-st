@@ -4,10 +4,18 @@ set -euo pipefail
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$repository_root"
 
-if [[ $(uname -s) != Linux || $(uname -m) != x86_64 ]]; then
-    printf '%s\n' 'rfopt target gate requires an AMD64 Linux host' >&2
+if [[ $(uname -s) != Linux ]]; then
+    printf '%s\n' 'rfopt target gate requires Linux' >&2
     exit 1
 fi
+
+case $(uname -m) in
+    x86_64|aarch64) ;;
+    *)
+        printf '%s\n' 'rfopt target gate requires an AMD64 or AArch64 Linux host' >&2
+        exit 1
+        ;;
+esac
 
 if [[ ! -e rfopt/.git ]]; then
     printf '%s\n' 'rfopt submodule is not initialized' >&2

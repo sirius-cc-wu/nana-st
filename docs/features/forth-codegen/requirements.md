@@ -18,7 +18,7 @@ Generalize the NanaST Forth code generator in [`src/forth.rs`](../../../src/fort
 
 ## Target Platform and Runtime
 
-The compilation target is Forth-2012 source code intended for execution by `rfopt` on AMD64 Linux. The generated code must use only explicitly documented Forth words.
+The compilation target is Forth-2012 source code intended for execution by `rfopt::nanast` on AMD64 Linux and AArch64 Linux. The generated code must use only explicitly documented Forth words.
 
 ## Supported Language Scope
 
@@ -116,7 +116,7 @@ The generated Forth source code must remain token-identical to:
 VARIABLE nana-input-0 VARIABLE nana-output-0 : nana-init 0 nana-output-0 ! ; : nana-scan nana-input-0 @ IF 1 ELSE 0 THEN nana-output-0 ! ;
 ```
 
-This guarantees that existing AMD64 integration tests in [`tests/rfopt_target.rs`](../../../tests/rfopt_target.rs) and the gate runner script ([`scripts/run-rfopt-target.sh`](../../../scripts/run-rfopt-target.sh)) continue to pass without regression.
+This guarantees that the integration tests in [`tests/rfopt_target.rs`](../../../tests/rfopt_target.rs) and the gate runner script ([`scripts/run-rfopt-target.sh`](../../../scripts/run-rfopt-target.sh)) continue to pass without regression on both supported architectures.
 
 ## Acceptance Criteria
 

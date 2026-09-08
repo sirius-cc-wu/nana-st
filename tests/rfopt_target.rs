@@ -1,7 +1,10 @@
-#![cfg(all(target_arch = "x86_64", target_os = "linux"))]
+#![cfg(all(
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+    target_os = "linux"
+))]
 
 use nana_st::compile_forth_source;
-use rfopt::host::{Cell, Runtime};
+use rfopt::nanast::{Cell, Runtime};
 
 const PASS_THROUGH: &str = "VARIABLE nana-input-0 VARIABLE nana-output-0 : nana-init 0 nana-output-0 ! ; : nana-scan nana-input-0 @ IF 1 ELSE 0 THEN nana-output-0 ! ;";
 

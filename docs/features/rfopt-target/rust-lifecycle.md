@@ -3,7 +3,7 @@ type: "Rust Lifecycle Design"
 title: "Rust Lifecycle Design: rfopt AMD64 Host API"
 description: "Accepted ownership, native-code lifetime, opaque handles, and error behavior for the first rfopt host API."
 id: "rfopt-amd64-host-api-lifecycle"
-status: "accepted"
+status: "superseded"
 language: "rust"
 revision: "rfopt 849cc2a"
 tags: [design, rust, lifecycle, rfopt, amd64, forth]
@@ -12,6 +12,8 @@ tags: [design, rust, lifecycle, rfopt, amd64, forth]
 # Rust Lifecycle Design: rfopt AMD64 Host API
 
 ## At a Glance
+
+This lifecycle design is superseded by the [STC NanaST lifecycle design](../stc-nanast-boundary/rust-lifecycle.md). It remains as the accepted design history for the original AMD64 host API.
 
 rfopt will provide one single-threaded `Runtime` that loads one Forth source
 string, compiles the approved subset into AMD64 machine code, and owns both the

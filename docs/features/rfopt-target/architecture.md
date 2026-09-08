@@ -2,13 +2,15 @@
 type: "Software Architecture Design"
 title: "Architecture: rfopt AMD64 Pass-Through Gate"
 description: "In-process host API between NanaST and rfopt for the first generated Forth test on AMD64."
-status: "accepted"
+status: "superseded"
 tags: [architecture, design, nanast, rfopt, amd64, forth]
 ---
 
 # Architecture: rfopt AMD64 Pass-Through Gate
 
 ## Architecture Question
+
+This architecture is superseded by the [STC NanaST execution boundary](../stc-nanast-boundary/architecture.md). It remains as the accepted design history for the original AMD64 gate.
 
 How can the first AMD64 NanaST target test:
 1. Load generated Forth source,
