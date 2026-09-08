@@ -63,8 +63,9 @@ responsibility of `A64Emitter::build_executable`.
   `ubuntu-24.04` for pull requests and changes to `main`. It uses the
   `RFOPT_SUBMODULE_TOKEN` repository secret to read the private submodule.
 - The integration script runs on both supported Linux architectures.
-- AArch64 execution evidence verifies emitted instructions under an AArch64
-  runtime; cross-compilation alone does not prove this boundary.
+- [AArch64 verification](../../verification/stc-nanast-boundary/aarch64.md)
+  records native execution under an AArch64 runtime. Cross-compilation alone
+  does not prove this boundary.
 
 ## Non-Goals
 

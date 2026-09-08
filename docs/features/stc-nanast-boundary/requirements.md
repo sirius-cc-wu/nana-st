@@ -75,8 +75,10 @@ any cell writes that preceded the error.
    changes to `main`. The `RFOPT_SUBMODULE_TOKEN` repository secret provides
    read access to the private pinned submodule. The runner rejects every host
    that is not Linux AMD64.
-5. An AArch64 execution gate runs the same `nanast` unit tests on AArch64
-   hardware or an AArch64 emulator with a Linux userspace.
+5. The AArch64 execution gate runs the same `nanast` unit tests on AArch64
+   hardware or an AArch64 emulator with a Linux userspace. The native Linux
+   evidence is recorded in
+   [AArch64 verification](../../verification/stc-nanast-boundary/aarch64.md).
 6. `scripts/run-rfopt-target.sh` permits AMD64 and AArch64 Linux hosts while it
    continues to require a clean, pinned rfopt submodule.
 
@@ -95,4 +97,5 @@ any cell writes that preceded the error.
 - [Retirement decision](../../decisions/retire-rfopt-host-api.md)
 - [`scripts/run-native-amd64-evidence.sh`](../../../scripts/run-native-amd64-evidence.sh)
 - [Native AMD64 CI workflow](../../../.github/workflows/native-amd64-evidence.yml)
+- [AArch64 verification](../../verification/stc-nanast-boundary/aarch64.md)
 - [Superseded AMD64 host requirements](../rfopt-target/requirements.md)
