@@ -886,6 +886,7 @@ dependencies = [
 name = "rfopt"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "memoffset",
  "region",
 ]
