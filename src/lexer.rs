@@ -66,6 +66,8 @@ impl<'source> Lexer<'source> {
                 ),
                 '=' => self.single_character_token(TokenKind::Equal),
                 ';' => self.single_character_token(TokenKind::Semicolon),
+                '.' => self.single_character_token(TokenKind::Dot),
+                ',' => self.single_character_token(TokenKind::Comma),
                 '(' => self.single_character_token(TokenKind::LeftParen),
                 ')' => self.single_character_token(TokenKind::RightParen),
                 '+' => self.single_character_token(TokenKind::Plus),
@@ -114,6 +116,10 @@ impl<'source> Lexer<'source> {
             "AND" => TokenKind::And,
             "OR" => TokenKind::Or,
             "NOT" => TokenKind::Not,
+            "R_TRIG" => TokenKind::RTrig,
+            "F_TRIG" => TokenKind::FTrig,
+            "TON" => TokenKind::Ton,
+            "TOF" => TokenKind::Tof,
             _ => TokenKind::Identifier(identifier),
         }
     }

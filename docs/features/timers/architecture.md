@@ -119,14 +119,16 @@ The initialization word writes `0` to every instance cell, ensuring clean startu
       1 nana-var-<inst>-q !
       0 nana-var-<inst>-et !
   ELSE
-      nana-var-<inst>-et @ nana-var-<inst>-pt @ < IF
-          nana-var-<inst>-et @ <dt> + nana-var-<inst>-et !
-          nana-var-<inst>-et @ nana-var-<inst>-pt @ > IF
-              nana-var-<inst>-pt @ nana-var-<inst>-et !
+      nana-var-<inst>-q @ IF
+          nana-var-<inst>-et @ nana-var-<inst>-pt @ < IF
+              nana-var-<inst>-et @ <dt> + nana-var-<inst>-et !
+              nana-var-<inst>-et @ nana-var-<inst>-pt @ > IF
+                  nana-var-<inst>-pt @ nana-var-<inst>-et !
+              THEN
           THEN
-          1 nana-var-<inst>-q !
-      ELSE
-          0 nana-var-<inst>-q !
+          nana-var-<inst>-et @ nana-var-<inst>-pt @ < 0= IF
+              0 nana-var-<inst>-q !
+          THEN
       THEN
   THEN
   ```
