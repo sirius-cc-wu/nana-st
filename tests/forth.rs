@@ -159,3 +159,14 @@ fn emits_chiller_control_fixture() {
         "FVARIABLE nana-input-0 FVARIABLE nana-input-1 FVARIABLE nana-input-2 VARIABLE nana-output-0 VARIABLE nana-output-1 VARIABLE nana-output-2 : nana-init 0 nana-output-0 ! 0 nana-output-1 ! 0 nana-output-2 ! ; : nana-scan 1 IF 1 ELSE 0 THEN nana-output-0 ! nana-input-0 F@ nana-input-1 F@ F> IF 1 IF 1 ELSE 0 THEN nana-output-1 ! 1 IF 1 ELSE 0 THEN nana-output-2 ! THEN nana-input-0 F@ nana-input-2 F@ F< IF 0 IF 1 ELSE 0 THEN nana-output-1 ! 0 IF 1 ELSE 0 THEN nana-output-2 ! THEN ;"
     );
 }
+
+#[test]
+fn emits_dosing_control_fixture() {
+    let generated = compile_forth_source(include_str!("fixtures/dosing.st"))
+        .expect("dosing fixture should compile to Forth");
+
+    assert_eq!(
+        generated,
+        "VARIABLE nana-input-0 FVARIABLE nana-input-1 FVARIABLE nana-input-2 FVARIABLE nana-input-3 FVARIABLE nana-input-4 FVARIABLE nana-input-5 FVARIABLE nana-input-6 VARIABLE nana-output-0 VARIABLE nana-output-1 VARIABLE nana-output-2 : nana-init 0 nana-output-0 ! 0 nana-output-1 ! 0 nana-output-2 ! ; : nana-scan nana-input-0 @ 0 = IF 0 IF 1 ELSE 0 THEN nana-output-0 ! 0 IF 1 ELSE 0 THEN nana-output-1 ! 0 IF 1 ELSE 0 THEN nana-output-2 ! nana-input-1 F@ nana-input-2 F@ F> IF 1 IF 1 ELSE 0 THEN nana-output-0 ! THEN nana-input-1 F@ nana-input-3 F@ F< IF 1 IF 1 ELSE 0 THEN nana-output-1 ! THEN nana-input-4 F@ nana-input-6 F@ F< IF 1 IF 1 ELSE 0 THEN nana-output-2 ! THEN nana-input-4 F@ nana-input-5 F@ F> IF 0 IF 1 ELSE 0 THEN nana-output-2 ! THEN THEN ;"
+    );
+}

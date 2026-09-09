@@ -315,3 +315,101 @@ fn runs_chiller_decision_logic_with_hysteresis() {
     assert_eq!(valve_open.read().unwrap(), 0);
     assert_eq!(pump_run.read().unwrap(), 0);
 }
+
+#[test]
+fn runs_dosing_decision_logic() {
+    let generated = compile_forth_source(include_str!("fixtures/dosing.st"))
+        .expect("dosing fixture should compile to Forth");
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("generated dosing source should load into rfopt runtime");
+
+    let dosing_mode = runtime.resolve_cell("nana-input-0").unwrap();
+    let ph_val = runtime.resolve_float_cell("nana-input-1").unwrap();
+    let ph_high_limit = runtime.resolve_float_cell("nana-input-2").unwrap();
+    let ph_low_limit = runtime.resolve_float_cell("nana-input-3").unwrap();
+    let cond_val = runtime.resolve_float_cell("nana-input-4").unwrap();
+    let cond_high_limit = runtime.resolve_float_cell("nana-input-5").unwrap();
+    let cond_low_limit = runtime.resolve_float_cell("nana-input-6").unwrap();
+
+    let hno3_pump = runtime.resolve_cell("nana-output-0").unwrap();
+    let naoh_pump = runtime.resolve_cell("nana-output-1").unwrap();
+    let nano3_pump = runtime.resolve_cell("nana-output-2").unwrap();
+
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    // 1. Initialization: all outputs reset to 0
+    init.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 0);
+    assert_eq!(nano3_pump.read().unwrap(), 0);
+
+    // Set configuration thresholds
+    ph_high_limit.write(10.0).unwrap();
+    ph_low_limit.write(5.0).unwrap();
+    cond_high_limit.write(100.0).unwrap();
+    cond_low_limit.write(50.0).unwrap();
+
+    // 2. Manual mode (dosing_mode = 1): pumps remain off even when out of bounds
+    dosing_mode.write(1).unwrap();
+    ph_val.write(12.0).unwrap();
+    cond_val.write(30.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 0);
+    assert_eq!(nano3_pump.read().unwrap(), 0);
+
+    // 3. Auto mode (dosing_mode = 0): High pH -> HNO3 (acid) pump activates
+    dosing_mode.write(0).unwrap();
+    ph_val.write(11.5).unwrap();
+    cond_val.write(75.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 1);
+    assert_eq!(naoh_pump.read().unwrap(), 0);
+    assert_eq!(nano3_pump.read().unwrap(), 0);
+
+    // 4. Auto mode: Normal pH (deadband) -> both pH pumps shut off
+    ph_val.write(7.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 0);
+    assert_eq!(nano3_pump.read().unwrap(), 0);
+
+    // 5. Auto mode: Low pH -> NaOH (base) pump activates
+    ph_val.write(4.2).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 1);
+    assert_eq!(nano3_pump.read().unwrap(), 0);
+
+    // 6. Auto mode: Low conductivity -> NaNO3 pump activates
+    ph_val.write(7.0).unwrap();
+    cond_val.write(40.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 0);
+    assert_eq!(nano3_pump.read().unwrap(), 1);
+
+    // 7. Auto mode: High conductivity -> NaNO3 pump shuts off
+    cond_val.write(120.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 0);
+    assert_eq!(nano3_pump.read().unwrap(), 0);
+
+    // 8. Auto mode: Simultaneous low pH and low conductivity
+    ph_val.write(4.0).unwrap();
+    cond_val.write(35.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 1);
+    assert_eq!(nano3_pump.read().unwrap(), 1);
+
+    // 9. Re-initialization resets all outputs
+    init.invoke().unwrap();
+    assert_eq!(hno3_pump.read().unwrap(), 0);
+    assert_eq!(naoh_pump.read().unwrap(), 0);
+    assert_eq!(nano3_pump.read().unwrap(), 0);
+}
