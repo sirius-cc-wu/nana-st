@@ -30,12 +30,10 @@ NanaST and rfopt prove source-to-runtime behavior through in-memory typed cell
 handles. They do not yet provide BNC process-image binding, EtherCAT access,
 cyclic deployment, or real-time evidence.
 
-The existing ST fixtures demonstrate the suitable initial class of behavior:
-
-- `legacy_aqua_state.st`: level and emergency-state decisions;
-- `legacy_cr6_fault_interlock.st`: fault aggregation;
-- `legacy_power_button_edge.st`: retained scan-to-scan edge detection;
-- `legacy_buzzer_mode_selection.st`: request-priority selection only.
+The suitable initial class of behavior is a device-neutral cyclic decision,
+such as level-state evaluation, fault aggregation, edge detection, or request
+priority selection. Each migration must derive this behavior directly from a
+selected legacy Forth source and verify it against recorded traces.
 
 ## Recommendation
 
@@ -51,7 +49,7 @@ EtherCAT, UART, Modbus, SDO, gateway, or motion words.
 
 | Group | Legacy sources | Recommendation | Additional requirement |
 |---|---|---|---|
-| Simple cyclic decisions | Existing `legacy_*.st` fixtures; `Ewater/sfc/chiller.fs`; `Ewater/sfc/dosing.fs` | Migrate first. Rewrite Forth actions as named Boolean, integer, and `REAL` I/O variables. | BNC signal mapping. |
+| Simple cyclic decisions | `Ewater/sfc/chiller.fs`; `Ewater/sfc/dosing.fs`; selected decision sections from the CR6 sources | Migrate first. Rewrite Forth actions as named Boolean, integer, and `REAL` I/O variables. | BNC signal mapping. |
 | Simple retained state | `ecm/sfc/simulation.fs`; parts of `run_time.fs` and `motion_state.fs` | Migrate after deciding the input/output names and scan ownership. | BNC signal mapping; a scan-period value when results represent elapsed time. |
 | Timed sequence logic | `buzzer.fs`, `trigger.fs`, `system_on_off.fs`, and portions of `power_on_off.fs` | Migrate after a small timer and state-machine profile exists. | Timer semantics and trace-based parity tests. |
 | Process and equipment charts | `cr6plc/process.fs`, `aqua_machine.fs`, `power_on_off.fs` | Decompose into smaller charts. Do not translate a complete chart as one unverified port. | Reusable state-machine components, timers, functions, and typed BNC command/acknowledgement signals. |
