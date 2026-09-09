@@ -162,7 +162,6 @@ pub enum ExpressionKind {
         instance: Identifier,
         field: Identifier,
     },
-
     Unary {
         operator: UnaryOperator,
         expression: Box<Expression>,

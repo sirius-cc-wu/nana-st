@@ -256,6 +256,11 @@ impl<'a> ForthEmitter<'a> {
 
                 tokens.push(Self::variable_name(et_var));
                 tokens.push("@".to_string());
+                tokens.push(Self::variable_name(pt_var));
+                tokens.extend(["@".to_string(), "<".to_string(), "IF".to_string()]);
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
                 self.emit_dt(*dt_var, tokens)?;
                 tokens.extend([
                     "+".to_string(),
@@ -276,6 +281,8 @@ impl<'a> ForthEmitter<'a> {
                     "!".to_string(),
                     "THEN".to_string(),
                 ]);
+
+                tokens.push("THEN".to_string());
 
                 tokens.push(Self::variable_name(et_var));
                 tokens.push("@".to_string());

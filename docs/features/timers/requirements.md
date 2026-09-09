@@ -154,11 +154,12 @@ When `cycle_dt` is declared, the compiled scan logic reads its cell value as `dt
 
 NanaST generates scalar Forth variables for each instance's internal state:
 
-- For `R_TRIG` named `trig`:
-  - `VARIABLE nana-var-trig-prev`
+- For `R_TRIG` or `F_TRIG` named `trig`:
+  - `VARIABLE nana-var-trig-m`
   - `VARIABLE nana-var-trig-q`
-- For `TON` named `tmr`:
+- For `TON` or `TOF` named `tmr`:
   - `VARIABLE nana-var-tmr-et`
+  - `VARIABLE nana-var-tmr-pt`
   - `VARIABLE nana-var-tmr-q`
 
 The generated Forth code for `nana-init` stores `0` into all instance state variables. The generated `nana-scan` code executes the discrete state update using native Forth comparison and arithmetic operations.

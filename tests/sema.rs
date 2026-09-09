@@ -402,6 +402,18 @@ fn rejects_timer_and_trigger_assignment_and_mutation_errors() {
         err.message
             .contains("cannot assign to read-only field 'ET' of instance 'tmr'")
     );
+
+    let tokens =
+        lex("PROGRAM Main VAR count : INT; END_VAR count.field := 10; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(
+        err.message
+            .contains("cannot access field on variable 'count'")
+    );
+
+    let tokens = lex("PROGRAM Main unknown.field := 10; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("unknown variable 'unknown'"));
 }
 
 #[test]
@@ -441,6 +453,18 @@ fn rejects_invalid_field_access_on_instances() {
         lex("PROGRAM Main VAR tmr : TON; b : BOOL; END_VAR b := tmr.CLK; END_PROGRAM").unwrap();
     let err = analyze(parse(tokens).unwrap()).unwrap_err();
     assert!(err.message.contains("has no field 'CLK'"));
+
+    let tokens =
+        lex("PROGRAM Main VAR count : INT; b : BOOL; END_VAR b := count.Q; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(
+        err.message
+            .contains("cannot access field on variable 'count'; 'count' is not an instance")
+    );
+
+    let tokens = lex("PROGRAM Main VAR b : BOOL; END_VAR b := ghost.Q; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("unknown instance 'ghost'"));
 }
 
 #[test]

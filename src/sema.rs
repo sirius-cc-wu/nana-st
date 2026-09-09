@@ -411,10 +411,15 @@ fn analyze_statement(
                             field.name, target.name
                         ),
                     });
-                } else {
+                } else if find_variable(variables, &target.name).is_some() {
                     return Err(SemanticError {
                         span: target.span,
                         message: format!("cannot access field on variable '{}'", target.name),
+                    });
+                } else {
+                    return Err(SemanticError {
+                        span: target.span,
+                        message: format!("unknown variable '{}'", target.name),
                     });
                 }
             }
@@ -495,7 +500,6 @@ fn analyze_invocation(
                     }
                     let analyzed =
                         analyze_expression(&arg.value, variables, instances, Some(DataType::Bool))?;
-                    require_type(&analyzed, DataType::Bool)?;
                     clk_expr = Some(analyzed);
                 } else {
                     return Err(SemanticError {
@@ -539,7 +543,6 @@ fn analyze_invocation(
                     }
                     let analyzed =
                         analyze_expression(&arg.value, variables, instances, Some(DataType::Bool))?;
-                    require_type(&analyzed, DataType::Bool)?;
                     in_expr = Some(analyzed);
                 } else if arg.name.name.eq_ignore_ascii_case("PT") {
                     if pt_expr.is_some() {
@@ -666,10 +669,25 @@ fn analyze_expression(
             }
         }
         ExpressionKind::FieldAccess { instance, field } => {
-            let inst = find_instance(instances, &instance.name).ok_or_else(|| SemanticError {
-                span: instance.span,
-                message: format!("unknown instance '{}'", instance.name),
-            })?;
+            let inst = match find_instance(instances, &instance.name) {
+                Some(inst) => inst,
+                None => {
+                    if find_variable(variables, &instance.name).is_some() {
+                        return Err(SemanticError {
+                            span: instance.span,
+                            message: format!(
+                                "cannot access field on variable '{}'; '{}' is not an instance",
+                                instance.name, instance.name
+                            ),
+                        });
+                    } else {
+                        return Err(SemanticError {
+                            span: instance.span,
+                            message: format!("unknown instance '{}'", instance.name),
+                        });
+                    }
+                }
+            };
 
             match inst.data_type {
                 DataType::RTrig | DataType::FTrig => {
