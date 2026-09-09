@@ -245,3 +245,73 @@ END_PROGRAM";
     assert_eq!(quot.read().unwrap(), 0);
     assert_eq!(is_greater.read().unwrap(), 0);
 }
+
+#[test]
+fn runs_chiller_decision_logic_with_hysteresis() {
+    let generated = compile_forth_source(include_str!("fixtures/chiller.st"))
+        .expect("chiller fixture should compile to Forth");
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("generated chiller source should load into rfopt runtime");
+
+    let water_temp = runtime.resolve_float_cell("nana-input-0").unwrap();
+    let high_limit = runtime.resolve_float_cell("nana-input-1").unwrap();
+    let low_limit = runtime.resolve_float_cell("nana-input-2").unwrap();
+    let chiller_enable = runtime.resolve_cell("nana-output-0").unwrap();
+    let valve_open = runtime.resolve_cell("nana-output-1").unwrap();
+    let pump_run = runtime.resolve_cell("nana-output-2").unwrap();
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    // 1. Initialization
+    init.invoke().unwrap();
+    assert_eq!(chiller_enable.read().unwrap(), 0);
+    assert_eq!(valve_open.read().unwrap(), 0);
+    assert_eq!(pump_run.read().unwrap(), 0);
+
+    // Set thresholds: high_limit = 25.0, low_limit = 18.0
+    high_limit.write(25.0).unwrap();
+    low_limit.write(18.0).unwrap();
+
+    // 2. Initial scan with moderate temp (within deadband: 20.0)
+    water_temp.write(20.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(chiller_enable.read().unwrap(), 1);
+    assert_eq!(valve_open.read().unwrap(), 0);
+    assert_eq!(pump_run.read().unwrap(), 0);
+
+    // 3. Temperature rises above high limit (26.5 > 25.0) -> chiller activates
+    water_temp.write(26.5).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(chiller_enable.read().unwrap(), 1);
+    assert_eq!(valve_open.read().unwrap(), 1);
+    assert_eq!(pump_run.read().unwrap(), 1);
+
+    // 4. Temperature drops into deadband (22.0) -> outputs remain active (hysteresis)
+    water_temp.write(22.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(chiller_enable.read().unwrap(), 1);
+    assert_eq!(valve_open.read().unwrap(), 1);
+    assert_eq!(pump_run.read().unwrap(), 1);
+
+    // 5. Temperature drops below low limit (17.5 < 18.0) -> chiller deactivates
+    water_temp.write(17.5).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(chiller_enable.read().unwrap(), 1);
+    assert_eq!(valve_open.read().unwrap(), 0);
+    assert_eq!(pump_run.read().unwrap(), 0);
+
+    // 6. Temperature rises back into deadband (20.0) -> outputs remain deactivated
+    water_temp.write(20.0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(chiller_enable.read().unwrap(), 1);
+    assert_eq!(valve_open.read().unwrap(), 0);
+    assert_eq!(pump_run.read().unwrap(), 0);
+
+    // 7. Re-initialization resets all outputs
+    init.invoke().unwrap();
+    assert_eq!(chiller_enable.read().unwrap(), 0);
+    assert_eq!(valve_open.read().unwrap(), 0);
+    assert_eq!(pump_run.read().unwrap(), 0);
+}

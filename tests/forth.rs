@@ -148,3 +148,14 @@ fn emits_local_variables_and_initializers() {
         "VARIABLE nana-var-counter VARIABLE nana-var-active VARIABLE nana-output-0 : nana-init 42 nana-var-counter ! 1 nana-var-active ! 0 nana-output-0 ! ; : nana-scan nana-var-counter @ 1 + nana-var-counter ! nana-var-counter @ nana-output-0 ! ;"
     );
 }
+
+#[test]
+fn emits_chiller_control_fixture() {
+    let generated = compile_forth_source(include_str!("fixtures/chiller.st"))
+        .expect("chiller fixture should compile to Forth");
+
+    assert_eq!(
+        generated,
+        "FVARIABLE nana-input-0 FVARIABLE nana-input-1 FVARIABLE nana-input-2 VARIABLE nana-output-0 VARIABLE nana-output-1 VARIABLE nana-output-2 : nana-init 0 nana-output-0 ! 0 nana-output-1 ! 0 nana-output-2 ! ; : nana-scan 1 IF 1 ELSE 0 THEN nana-output-0 ! nana-input-0 F@ nana-input-1 F@ F> IF 1 IF 1 ELSE 0 THEN nana-output-1 ! 1 IF 1 ELSE 0 THEN nana-output-2 ! THEN nana-input-0 F@ nana-input-2 F@ F< IF 0 IF 1 ELSE 0 THEN nana-output-1 ! 0 IF 1 ELSE 0 THEN nana-output-2 ! THEN ;"
+    );
+}
