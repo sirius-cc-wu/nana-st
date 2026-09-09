@@ -2,7 +2,8 @@ use nana_st::ast::{BinaryOperator, DataType, StorageClass};
 use nana_st::lexer::lex;
 use nana_st::parser::parse;
 use nana_st::sema::{
-    AnalyzedExpressionKind, AnalyzedStatementKind, ConstantValue, IntegerSemantics, analyze,
+    AnalyzedExpressionKind, AnalyzedStatementKind, AnalyzedTimerUpdate, ConstantValue,
+    IntegerSemantics, analyze,
 };
 
 fn analyze_source(source: &str) -> nana_st::sema::AnalyzedProgram {
@@ -295,4 +296,182 @@ fn rejects_nonliteral_var_initializers() {
     let error = analyze(program).expect_err("VAR initializers must be literals");
 
     assert!(error.message.contains("initializer must be a literal"));
+}
+
+#[test]
+fn analyzes_timer_and_trigger_instances_and_resolves_cycle_dt() {
+    let program = analyze_source(
+        "PROGRAM Timers
+VAR_INPUT
+    cycle_dt : DINT;
+    btn : BOOL;
+END_VAR
+VAR
+    trig : R_TRIG;
+    tmr : TON;
+END_VAR
+VAR_OUTPUT
+    out : BOOL;
+    elapsed : DINT;
+END_VAR
+    trig(CLK := btn);
+    tmr(IN := trig.Q, PT := 500);
+    out := tmr.Q;
+    elapsed := tmr.ET;
+END_PROGRAM",
+    );
+
+    // Variables should include:
+    // 0: cycle_dt (Input)
+    // 1: btn (Input)
+    // 2: trig-m (Local)
+    // 3: trig-q (Local)
+    // 4: tmr-et (Local)
+    // 5: tmr-pt (Local)
+    // 6: tmr-q (Local)
+    // 7: out (Output)
+    // 8: elapsed (Output)
+    assert_eq!(program.variables.len(), 9);
+    assert_eq!(program.variables[2].name, "trig-m");
+    assert_eq!(program.variables[3].name, "trig-q");
+    assert_eq!(program.variables[4].name, "tmr-et");
+    assert_eq!(program.variables[5].name, "tmr-pt");
+    assert_eq!(program.variables[6].name, "tmr-q");
+
+    // Statements:
+    // 0: TimerUpdate(RTrig)
+    // 1: TimerUpdate(Ton)
+    // 2: Assignment out := tmr.Q
+    // 3: Assignment elapsed := tmr.ET
+    assert_eq!(program.statements.len(), 4);
+    let AnalyzedStatementKind::TimerUpdate(AnalyzedTimerUpdate::RTrig { m_var, q_var, .. }) =
+        &program.statements[0].kind
+    else {
+        panic!("statement 0 should be RTrig update");
+    };
+    assert_eq!(*m_var, 2);
+    assert_eq!(*q_var, 3);
+
+    let AnalyzedStatementKind::TimerUpdate(AnalyzedTimerUpdate::Ton {
+        dt_var,
+        et_var,
+        pt_var,
+        q_var,
+        ..
+    }) = &program.statements[1].kind
+    else {
+        panic!("statement 1 should be Ton update");
+    };
+    assert_eq!(*dt_var, Some(0)); // bound to cycle_dt at index 0
+    assert_eq!(*et_var, 4);
+    assert_eq!(*pt_var, 5);
+    assert_eq!(*q_var, 6);
+}
+
+#[test]
+fn rejects_timer_and_trigger_declaration_errors() {
+    let tokens = lex("PROGRAM Main VAR_INPUT tmr : TON; END_VAR END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("only supported in VAR declarations"));
+
+    let tokens = lex("PROGRAM Main VAR_OUTPUT trig : R_TRIG; END_VAR END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("only supported in VAR declarations"));
+
+    let tokens = lex("PROGRAM Main VAR tmr : TON := 0; END_VAR END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("do not support initializers"));
+}
+
+#[test]
+fn rejects_timer_and_trigger_assignment_and_mutation_errors() {
+    let tokens = lex("PROGRAM Main VAR tmr : TON; END_VAR tmr := 10; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("cannot assign to instance 'tmr'"));
+
+    let tokens = lex("PROGRAM Main VAR tmr : TON; END_VAR tmr.Q := TRUE; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(
+        err.message
+            .contains("cannot assign to read-only field 'Q' of instance 'tmr'")
+    );
+
+    let tokens = lex("PROGRAM Main VAR tmr : TON; END_VAR tmr.ET := 10; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(
+        err.message
+            .contains("cannot assign to read-only field 'ET' of instance 'tmr'")
+    );
+
+    let tokens =
+        lex("PROGRAM Main VAR count : INT; END_VAR count.field := 10; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(
+        err.message
+            .contains("cannot access field on variable 'count'")
+    );
+
+    let tokens = lex("PROGRAM Main unknown.field := 10; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("unknown variable 'unknown'"));
+}
+
+#[test]
+fn rejects_invalid_timer_and_trigger_invocations() {
+    let tokens = lex("PROGRAM Main VAR trig : R_TRIG; END_VAR trig(); END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("missing argument 'CLK'"));
+
+    let tokens =
+        lex("PROGRAM Main VAR trig : R_TRIG; END_VAR trig(FOO := TRUE); END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("unexpected argument 'FOO'"));
+
+    let tokens = lex("PROGRAM Main VAR tmr : TON; END_VAR tmr(IN := TRUE); END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("missing argument 'PT'"));
+
+    let tokens =
+        lex("PROGRAM Main VAR tmr : TON; END_VAR tmr(IN := TRUE, PT := -50); END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("cannot be negative"));
+
+    let tokens =
+        lex("PROGRAM Main VAR tmr : TON; END_VAR tmr(IN := TRUE, PT := 1.5); END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("expected INT or DINT"));
+}
+
+#[test]
+fn rejects_invalid_field_access_on_instances() {
+    let tokens =
+        lex("PROGRAM Main VAR trig : R_TRIG; b : BOOL; END_VAR b := trig.ET; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("has no field 'ET'"));
+
+    let tokens =
+        lex("PROGRAM Main VAR tmr : TON; b : BOOL; END_VAR b := tmr.CLK; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("has no field 'CLK'"));
+
+    let tokens =
+        lex("PROGRAM Main VAR count : INT; b : BOOL; END_VAR b := count.Q; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(
+        err.message
+            .contains("cannot access field on variable 'count'; 'count' is not an instance")
+    );
+
+    let tokens = lex("PROGRAM Main VAR b : BOOL; END_VAR b := ghost.Q; END_PROGRAM").unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("unknown instance 'ghost'"));
+}
+
+#[test]
+fn rejects_non_integer_cycle_dt() {
+    let tokens =
+        lex("PROGRAM Main VAR_INPUT cycle_dt : REAL; END_VAR VAR tmr : TON; END_VAR END_PROGRAM")
+            .unwrap();
+    let err = analyze(parse(tokens).unwrap()).unwrap_err();
+    assert!(err.message.contains("cycle_dt input must be INT or DINT"));
 }

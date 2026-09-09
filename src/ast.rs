@@ -48,12 +48,18 @@ pub enum TokenKind {
     And,
     Or,
     Not,
+    RTrig,
+    FTrig,
+    Ton,
+    Tof,
     Identifier(String),
     Integer(String),
     RealLiteral(String),
     Assign,
     Colon,
     Semicolon,
+    Dot,
+    Comma,
     LeftParen,
     RightParen,
     Plus,
@@ -87,6 +93,10 @@ pub enum DataType {
     Int,
     Dint,
     Real,
+    RTrig,
+    FTrig,
+    Ton,
+    Tof,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,6 +117,12 @@ pub struct Program {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NamedArgument {
+    pub name: Identifier,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Statement {
     pub kind: StatementKind,
     pub span: Span,
@@ -116,7 +132,12 @@ pub struct Statement {
 pub enum StatementKind {
     Assignment {
         target: Identifier,
+        field: Option<Identifier>,
         value: Expression,
+    },
+    Invocation {
+        instance: Identifier,
+        arguments: Vec<NamedArgument>,
     },
     If {
         condition: Expression,
@@ -137,6 +158,10 @@ pub enum ExpressionKind {
     Integer(String),
     Real(String),
     Variable(Identifier),
+    FieldAccess {
+        instance: Identifier,
+        field: Identifier,
+    },
     Unary {
         operator: UnaryOperator,
         expression: Box<Expression>,

@@ -2,8 +2,9 @@ use std::error::Error;
 use std::fmt;
 
 use crate::ast::{
-    BinaryOperator, DataType, Declaration, Expression, ExpressionKind, Identifier, Position,
-    Program, Span, Statement, StatementKind, StorageClass, Token, TokenKind, UnaryOperator,
+    BinaryOperator, DataType, Declaration, Expression, ExpressionKind, Identifier, NamedArgument,
+    Position, Program, Span, Statement, StatementKind, StorageClass, Token, TokenKind,
+    UnaryOperator,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,9 +140,13 @@ impl Parser {
             TokenKind::Int => Ok(DataType::Int),
             TokenKind::Dint => Ok(DataType::Dint),
             TokenKind::Real => Ok(DataType::Real),
+            TokenKind::RTrig => Ok(DataType::RTrig),
+            TokenKind::FTrig => Ok(DataType::FTrig),
+            TokenKind::Ton => Ok(DataType::Ton),
+            TokenKind::Tof => Ok(DataType::Tof),
             _ => Err(ParseError {
                 span: token.span,
-                message: "expected one of 'BOOL', 'INT', 'DINT', or 'REAL'".to_owned(),
+                message: "expected a data type".to_owned(),
             }),
         }
     }
@@ -164,21 +169,67 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, ParseError> {
         match self.peek_kind() {
-            Some(TokenKind::Identifier(_)) => self.parse_assignment(),
+            Some(TokenKind::Identifier(_)) => {
+                let target = self.parse_identifier()?;
+                if self.peek_is(&TokenKind::LeftParen) {
+                    self.parse_invocation(target)
+                } else {
+                    self.parse_assignment_with_target(target)
+                }
+            }
             Some(TokenKind::If) => self.parse_if_statement(),
-            _ => Err(self.error_here("expected an assignment or 'IF' statement")),
+            _ => Err(self.error_here("expected an assignment, invocation, or 'IF' statement")),
         }
     }
 
-    fn parse_assignment(&mut self) -> Result<Statement, ParseError> {
-        let target = self.parse_identifier()?;
+    fn parse_invocation(&mut self, instance: Identifier) -> Result<Statement, ParseError> {
+        let start = instance.span.start;
+        self.expect(TokenKind::LeftParen, "'('")?;
+        let mut arguments = Vec::new();
+        while !self.peek_is(&TokenKind::RightParen) {
+            let name = self.parse_identifier()?;
+            self.expect(TokenKind::Assign, "':='")?;
+            let value = self.parse_expression()?;
+            arguments.push(NamedArgument { name, value });
+            if self.peek_is(&TokenKind::Comma) {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        self.expect(TokenKind::RightParen, "')'")?;
+        let end = self.expect(TokenKind::Semicolon, "';'")?.span.end;
+
+        Ok(Statement {
+            kind: StatementKind::Invocation {
+                instance,
+                arguments,
+            },
+            span: Span { start, end },
+        })
+    }
+
+    fn parse_assignment_with_target(
+        &mut self,
+        target: Identifier,
+    ) -> Result<Statement, ParseError> {
         let start = target.span.start;
+        let field = if self.peek_is(&TokenKind::Dot) {
+            self.advance();
+            Some(self.parse_identifier()?)
+        } else {
+            None
+        };
         self.expect(TokenKind::Assign, "':='")?;
         let value = self.parse_expression()?;
         let end = self.expect(TokenKind::Semicolon, "';'")?.span.end;
 
         Ok(Statement {
-            kind: StatementKind::Assignment { target, value },
+            kind: StatementKind::Assignment {
+                target,
+                field,
+                value,
+            },
             span: Span { start, end },
         })
     }
@@ -292,13 +343,30 @@ impl Parser {
                 kind: ExpressionKind::Real(literal),
                 span: token.span,
             }),
-            TokenKind::Identifier(name) => Ok(Expression {
-                kind: ExpressionKind::Variable(Identifier {
+            TokenKind::Identifier(name) => {
+                let instance = Identifier {
                     name,
                     span: token.span,
-                }),
-                span: token.span,
-            }),
+                };
+                if self.peek_is(&TokenKind::Dot) {
+                    self.advance();
+                    let field = self.parse_identifier()?;
+                    let span = Span {
+                        start: instance.span.start,
+                        end: field.span.end,
+                    };
+                    Ok(Expression {
+                        kind: ExpressionKind::FieldAccess { instance, field },
+                        span,
+                    })
+                } else {
+                    Ok(Expression {
+                        kind: ExpressionKind::Variable(instance),
+                        span: token.span,
+                    })
+                }
+            }
+
             TokenKind::LeftParen => {
                 let mut expression = self.parse_expression()?;
                 expression.span = Span {

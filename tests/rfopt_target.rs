@@ -413,3 +413,319 @@ fn runs_dosing_decision_logic() {
     assert_eq!(naoh_pump.read().unwrap(), 0);
     assert_eq!(nano3_pump.read().unwrap(), 0);
 }
+
+#[test]
+fn runs_r_trig_and_f_trig_edge_detection() {
+    let generated = compile_forth_source(
+        "PROGRAM EdgeProfile
+VAR_INPUT
+    sig : BOOL;
+END_VAR
+VAR
+    rise : R_TRIG;
+    fall : F_TRIG;
+END_VAR
+VAR_OUTPUT
+    rise_q : BOOL;
+    fall_q : BOOL;
+END_VAR
+    rise(CLK := sig);
+    fall(CLK := sig);
+    rise_q := rise.Q;
+    fall_q := fall.Q;
+END_PROGRAM",
+    )
+    .expect("edge profile should compile to Forth");
+
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("edge profile should load into rfopt runtime");
+
+    let sig = runtime.resolve_cell("nana-input-0").unwrap();
+    let rise_q = runtime.resolve_cell("nana-output-0").unwrap();
+    let fall_q = runtime.resolve_cell("nana-output-1").unwrap();
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    init.invoke().unwrap();
+    assert_eq!(rise_q.read().unwrap(), 0);
+    assert_eq!(fall_q.read().unwrap(), 0);
+
+    // Initial low scan
+    sig.write(0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(rise_q.read().unwrap(), 0);
+    assert_eq!(fall_q.read().unwrap(), 0);
+
+    // Rising edge: 0 -> 1
+    sig.write(1).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(
+        rise_q.read().unwrap(),
+        1,
+        "R_TRIG should fire on rising edge"
+    );
+    assert_eq!(fall_q.read().unwrap(), 0);
+
+    // Held high: 1 -> 1
+    scan.invoke().unwrap();
+    assert_eq!(
+        rise_q.read().unwrap(),
+        0,
+        "R_TRIG should only fire for one cycle"
+    );
+    assert_eq!(fall_q.read().unwrap(), 0);
+
+    // Held high again: 1 -> 1
+    scan.invoke().unwrap();
+    assert_eq!(rise_q.read().unwrap(), 0);
+    assert_eq!(fall_q.read().unwrap(), 0);
+
+    // Falling edge: 1 -> 0
+    sig.write(0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(rise_q.read().unwrap(), 0);
+    assert_eq!(
+        fall_q.read().unwrap(),
+        1,
+        "F_TRIG should fire on falling edge"
+    );
+
+    // Held low: 0 -> 0
+    scan.invoke().unwrap();
+    assert_eq!(rise_q.read().unwrap(), 0);
+    assert_eq!(
+        fall_q.read().unwrap(),
+        0,
+        "F_TRIG should only fire for one cycle"
+    );
+
+    // Re-initialization resets internal state
+    init.invoke().unwrap();
+    assert_eq!(rise_q.read().unwrap(), 0);
+    assert_eq!(fall_q.read().unwrap(), 0);
+}
+
+#[test]
+fn runs_ton_on_delay_with_discrete_cycle_dt() {
+    let generated = compile_forth_source(
+        "PROGRAM TimerProfile
+VAR_INPUT
+    cycle_dt : DINT;
+    enable : BOOL;
+END_VAR
+VAR
+    timer : TON;
+END_VAR
+VAR_OUTPUT
+    out_q : BOOL;
+    elapsed : DINT;
+END_VAR
+    timer(IN := enable, PT := 50);
+    out_q := timer.Q;
+    elapsed := timer.ET;
+END_PROGRAM",
+    )
+    .expect("timer profile should compile to Forth");
+
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("timer profile should load into rfopt runtime");
+
+    let cycle_dt = runtime.resolve_cell("nana-input-0").unwrap();
+    let enable = runtime.resolve_cell("nana-input-1").unwrap();
+    let out_q = runtime.resolve_cell("nana-output-0").unwrap();
+    let elapsed = runtime.resolve_cell("nana-output-1").unwrap();
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    init.invoke().unwrap();
+    cycle_dt.write(10).unwrap(); // 10 ms per scan cycle
+    enable.write(0).unwrap();
+
+    // Scan with enable = 0
+    scan.invoke().unwrap();
+    assert_eq!(out_q.read().unwrap(), 0);
+    assert_eq!(elapsed.read().unwrap(), 0);
+
+    // Cycle 1: enable = 1 -> ET = 10, Q = 0
+    enable.write(1).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 10);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Cycle 2: ET = 20, Q = 0
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 20);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Cycle 3: ET = 30, Q = 0
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 30);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Cycle 4: ET = 40, Q = 0
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 40);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Cycle 5: ET = 50, Q = 1 (delay elapsed)
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 50);
+    assert_eq!(out_q.read().unwrap(), 1);
+
+    // Cycle 6: ET saturates at PT = 50, Q = 1
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 50);
+    assert_eq!(out_q.read().unwrap(), 1);
+
+    // Cycle 7: enable = 0 -> immediate reset of ET and Q
+    enable.write(0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 0);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Cycle 8: enable = 1 -> starts accumulating again from 0
+    enable.write(1).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 10);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Cycle 9: interruption before PT -> drops back to 0 immediately
+    enable.write(0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 0);
+    assert_eq!(out_q.read().unwrap(), 0);
+}
+
+#[test]
+fn runs_tof_off_delay_with_discrete_cycle_dt() {
+    let generated = compile_forth_source(
+        "PROGRAM OffDelayProfile
+VAR_INPUT
+    cycle_dt : DINT;
+    trigger : BOOL;
+END_VAR
+VAR
+    timer : TOF;
+END_VAR
+VAR_OUTPUT
+    out_q : BOOL;
+    elapsed : DINT;
+END_VAR
+    timer(IN := trigger, PT := 30);
+    out_q := timer.Q;
+    elapsed := timer.ET;
+END_PROGRAM",
+    )
+    .expect("off delay profile should compile to Forth");
+
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("off delay profile should load into rfopt runtime");
+
+    let cycle_dt = runtime.resolve_cell("nana-input-0").unwrap();
+    let trigger = runtime.resolve_cell("nana-input-1").unwrap();
+    let out_q = runtime.resolve_cell("nana-output-0").unwrap();
+    let elapsed = runtime.resolve_cell("nana-output-1").unwrap();
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    init.invoke().unwrap();
+    cycle_dt.write(10).unwrap(); // 10 ms per scan cycle
+    trigger.write(0).unwrap();
+
+    // Startup with trigger = 0: Q must remain 0 and not spuriously activate
+    scan.invoke().unwrap();
+    assert_eq!(out_q.read().unwrap(), 0);
+    assert_eq!(elapsed.read().unwrap(), 0);
+    scan.invoke().unwrap();
+    assert_eq!(out_q.read().unwrap(), 0);
+    assert_eq!(elapsed.read().unwrap(), 0);
+
+    // Turn trigger on: Q becomes 1, ET = 0
+    trigger.write(1).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(out_q.read().unwrap(), 1);
+    assert_eq!(elapsed.read().unwrap(), 0);
+
+    // Hold trigger on: Q remains 1, ET = 0
+    scan.invoke().unwrap();
+    assert_eq!(out_q.read().unwrap(), 1);
+    assert_eq!(elapsed.read().unwrap(), 0);
+
+    // Trigger drops to 0: off delay begins counting
+    trigger.write(0).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 10);
+    assert_eq!(out_q.read().unwrap(), 1);
+
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 20);
+    assert_eq!(out_q.read().unwrap(), 1);
+
+    // Delay expired at PT = 30: Q drops to 0
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 30);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Subsequent scans with trigger = 0 remain off
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 30);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Trigger turns on again: Q becomes 1 immediately, ET resets to 0
+    trigger.write(1).unwrap();
+    scan.invoke().unwrap();
+    assert_eq!(out_q.read().unwrap(), 1);
+    assert_eq!(elapsed.read().unwrap(), 0);
+}
+
+#[test]
+fn runs_ton_default_dt_without_cycle_dt_input() {
+    let generated = compile_forth_source(
+        "PROGRAM DefaultDt
+VAR_INPUT
+    in_sig : BOOL;
+END_VAR
+VAR
+    timer : TON;
+END_VAR
+VAR_OUTPUT
+    out_q : BOOL;
+    elapsed : DINT;
+END_VAR
+    timer(IN := in_sig, PT := 2);
+    out_q := timer.Q;
+    elapsed := timer.ET;
+END_PROGRAM",
+    )
+    .expect("default dt program should compile to Forth");
+
+    let mut runtime = Runtime::new();
+    runtime
+        .load(&generated)
+        .expect("default dt program should load into rfopt runtime");
+
+    let in_sig = runtime.resolve_cell("nana-input-0").unwrap();
+    let out_q = runtime.resolve_cell("nana-output-0").unwrap();
+    let elapsed = runtime.resolve_cell("nana-output-1").unwrap();
+    let init = runtime.resolve_word("nana-init").unwrap();
+    let scan = runtime.resolve_word("nana-scan").unwrap();
+
+    init.invoke().unwrap();
+    in_sig.write(1).unwrap();
+
+    // Scan 1: default dt = 1 -> ET = 1, Q = 0
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 1);
+    assert_eq!(out_q.read().unwrap(), 0);
+
+    // Scan 2: ET = 2 >= PT -> Q = 1
+    scan.invoke().unwrap();
+    assert_eq!(elapsed.read().unwrap(), 2);
+    assert_eq!(out_q.read().unwrap(), 1);
+}

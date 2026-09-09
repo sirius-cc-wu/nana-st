@@ -170,3 +170,64 @@ fn emits_dosing_control_fixture() {
         "VARIABLE nana-input-0 FVARIABLE nana-input-1 FVARIABLE nana-input-2 FVARIABLE nana-input-3 FVARIABLE nana-input-4 FVARIABLE nana-input-5 FVARIABLE nana-input-6 VARIABLE nana-output-0 VARIABLE nana-output-1 VARIABLE nana-output-2 : nana-init 0 nana-output-0 ! 0 nana-output-1 ! 0 nana-output-2 ! ; : nana-scan nana-input-0 @ 0 = IF 0 IF 1 ELSE 0 THEN nana-output-0 ! 0 IF 1 ELSE 0 THEN nana-output-1 ! 0 IF 1 ELSE 0 THEN nana-output-2 ! nana-input-1 F@ nana-input-2 F@ F> IF 1 IF 1 ELSE 0 THEN nana-output-0 ! THEN nana-input-1 F@ nana-input-3 F@ F< IF 1 IF 1 ELSE 0 THEN nana-output-1 ! THEN nana-input-4 F@ nana-input-6 F@ F< IF 1 IF 1 ELSE 0 THEN nana-output-2 ! THEN nana-input-4 F@ nana-input-5 F@ F> IF 0 IF 1 ELSE 0 THEN nana-output-2 ! THEN THEN ;"
     );
 }
+
+#[test]
+fn emits_r_trig_and_f_trig_forth() {
+    let generated = compile_forth_source(
+        "PROGRAM Edges
+VAR_INPUT
+    sig : BOOL;
+END_VAR
+VAR
+    rise : R_TRIG;
+    fall : F_TRIG;
+END_VAR
+VAR_OUTPUT
+    rise_q : BOOL;
+    fall_q : BOOL;
+END_VAR
+    rise(CLK := sig);
+    fall(CLK := sig);
+    rise_q := rise.Q;
+    fall_q := fall.Q;
+END_PROGRAM",
+    )
+    .expect("edge triggers should compile to Forth");
+
+    assert_eq!(
+        generated,
+        "VARIABLE nana-input-0 VARIABLE nana-var-rise-m VARIABLE nana-var-rise-q VARIABLE nana-var-fall-m VARIABLE nana-var-fall-q VARIABLE nana-output-0 VARIABLE nana-output-1 : nana-init 0 nana-var-rise-m ! 0 nana-var-rise-q ! 0 nana-var-fall-m ! 0 nana-var-fall-q ! 0 nana-output-0 ! 0 nana-output-1 ! ; : nana-scan nana-input-0 @ IF nana-var-rise-m @ 0= IF 1 ELSE 0 THEN nana-var-rise-q ! 1 nana-var-rise-m ! ELSE 0 nana-var-rise-q ! 0 nana-var-rise-m ! THEN nana-input-0 @ IF 0 nana-var-fall-q ! 1 nana-var-fall-m ! ELSE nana-var-fall-m @ 1 = IF 1 ELSE 0 THEN nana-var-fall-q ! 0 nana-var-fall-m ! THEN nana-var-rise-q @ IF 1 ELSE 0 THEN nana-output-0 ! nana-var-fall-q @ IF 1 ELSE 0 THEN nana-output-1 ! ;"
+    );
+}
+
+#[test]
+fn emits_ton_and_tof_with_cycle_dt_forth() {
+    let generated = compile_forth_source(
+        "PROGRAM Timers
+VAR_INPUT
+    cycle_dt : DINT;
+    in_sig : BOOL;
+END_VAR
+VAR
+    on_delay : TON;
+    off_delay : TOF;
+END_VAR
+VAR_OUTPUT
+    ton_q : BOOL;
+    tof_q : BOOL;
+    ton_et : DINT;
+END_VAR
+    on_delay(IN := in_sig, PT := 200);
+    off_delay(IN := in_sig, PT := 300);
+    ton_q := on_delay.Q;
+    tof_q := off_delay.Q;
+    ton_et := on_delay.ET;
+END_PROGRAM",
+    )
+    .expect("timers should compile to Forth");
+
+    assert_eq!(
+        generated,
+        "VARIABLE nana-input-0 VARIABLE nana-input-1 VARIABLE nana-var-on_delay-et VARIABLE nana-var-on_delay-pt VARIABLE nana-var-on_delay-q VARIABLE nana-var-off_delay-et VARIABLE nana-var-off_delay-pt VARIABLE nana-var-off_delay-q VARIABLE nana-output-0 VARIABLE nana-output-1 VARIABLE nana-output-2 : nana-init 0 nana-var-on_delay-et ! 0 nana-var-on_delay-pt ! 0 nana-var-on_delay-q ! 0 nana-var-off_delay-et ! 0 nana-var-off_delay-pt ! 0 nana-var-off_delay-q ! 0 nana-output-0 ! 0 nana-output-1 ! 0 nana-output-2 ! ; : nana-scan 200 nana-var-on_delay-pt ! nana-input-1 @ IF nana-var-on_delay-et @ nana-var-on_delay-pt @ < IF nana-var-on_delay-et @ nana-input-0 @ + nana-var-on_delay-et ! nana-var-on_delay-et @ nana-var-on_delay-pt @ > IF nana-var-on_delay-pt @ nana-var-on_delay-et ! THEN THEN nana-var-on_delay-et @ nana-var-on_delay-pt @ < 0= IF 1 ELSE 0 THEN nana-var-on_delay-q ! ELSE 0 nana-var-on_delay-et ! 0 nana-var-on_delay-q ! THEN 300 nana-var-off_delay-pt ! nana-input-1 @ IF 1 nana-var-off_delay-q ! 0 nana-var-off_delay-et ! ELSE nana-var-off_delay-q @ IF nana-var-off_delay-et @ nana-var-off_delay-pt @ < IF nana-var-off_delay-et @ nana-input-0 @ + nana-var-off_delay-et ! nana-var-off_delay-et @ nana-var-off_delay-pt @ > IF nana-var-off_delay-pt @ nana-var-off_delay-et ! THEN THEN nana-var-off_delay-et @ nana-var-off_delay-pt @ < 0= IF 0 nana-var-off_delay-q ! THEN THEN THEN nana-var-on_delay-q @ IF 1 ELSE 0 THEN nana-output-0 ! nana-var-off_delay-q @ IF 1 ELSE 0 THEN nana-output-1 ! nana-var-on_delay-et @ nana-output-2 ! ;"
+    );
+}

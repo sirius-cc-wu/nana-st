@@ -67,7 +67,12 @@ fn parses_declarations_assignments_and_if_else_statements() {
     assert_eq!(then_body.len(), 1);
     assert_eq!(else_body.len(), 1);
 
-    let StatementKind::Assignment { target, value } = &program.statements[1].kind else {
+    let StatementKind::Assignment {
+        target,
+        value,
+        field: _,
+    } = &program.statements[1].kind
+    else {
         panic!("second statement should be an assignment");
     };
     assert_eq!(target.name, "active");
@@ -143,4 +148,67 @@ fn rejects_source_after_the_single_program() {
     let error = parse(tokens).expect_err("a second program should fail");
 
     assert!(error.message.contains("unexpected token after END_PROGRAM"));
+}
+
+#[test]
+fn parses_timer_and_trigger_declarations_and_invocations() {
+    let program = parse_source(
+        "PROGRAM Timers
+VAR
+    btn_trig : R_TRIG;
+    fall_trig : F_TRIG;
+    delay_on : TON;
+    delay_off : TOF;
+    out_sig : BOOL;
+    elapsed : DINT;
+END_VAR
+    btn_trig(CLK := TRUE);
+    delay_on(IN := btn_trig.Q, PT := 100);
+    out_sig := delay_on.Q;
+    elapsed := delay_on.ET;
+END_PROGRAM",
+    );
+
+    assert_eq!(program.declarations.len(), 6);
+    assert_eq!(program.declarations[0].data_type, DataType::RTrig);
+    assert_eq!(program.declarations[1].data_type, DataType::FTrig);
+    assert_eq!(program.declarations[2].data_type, DataType::Ton);
+    assert_eq!(program.declarations[3].data_type, DataType::Tof);
+
+    assert_eq!(program.statements.len(), 4);
+    let StatementKind::Invocation {
+        instance,
+        arguments,
+    } = &program.statements[0].kind
+    else {
+        panic!("first statement should be an invocation");
+    };
+    assert_eq!(instance.name, "btn_trig");
+    assert_eq!(arguments.len(), 1);
+    assert_eq!(arguments[0].name.name, "CLK");
+
+    let StatementKind::Invocation {
+        instance,
+        arguments,
+    } = &program.statements[1].kind
+    else {
+        panic!("second statement should be an invocation");
+    };
+    assert_eq!(instance.name, "delay_on");
+    assert_eq!(arguments.len(), 2);
+    assert_eq!(arguments[0].name.name, "IN");
+    assert!(matches!(
+        arguments[0].value.kind,
+        ExpressionKind::FieldAccess { .. }
+    ));
+    assert_eq!(arguments[1].name.name, "PT");
+
+    let StatementKind::Assignment { value, .. } = &program.statements[2].kind else {
+        panic!("third statement should be assignment");
+    };
+    let ExpressionKind::FieldAccess { instance, field } = &value.kind else {
+        panic!("value should be FieldAccess");
+    };
+    assert_eq!(instance.name, "delay_on");
+    assert_eq!(field.name, "Q");
 }

@@ -4,7 +4,7 @@ use std::fmt;
 use crate::ast::{BinaryOperator, DataType, StorageClass, UnaryOperator};
 use crate::sema::{
     AnalyzedExpression, AnalyzedExpressionKind, AnalyzedProgram, AnalyzedStatement,
-    AnalyzedStatementKind, AnalyzedVariable, ConstantValue,
+    AnalyzedStatementKind, AnalyzedTimerUpdate, AnalyzedVariable, ConstantValue,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -121,6 +121,310 @@ impl<'a> ForthEmitter<'a> {
                 }
                 tokens.push("THEN".to_string());
             }
+            AnalyzedStatementKind::TimerUpdate(update) => {
+                self.emit_timer_update(update, tokens)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn emit_timer_update(
+        &self,
+        update: &AnalyzedTimerUpdate,
+        tokens: &mut Vec<String>,
+    ) -> Result<(), ForthError> {
+        match update {
+            AnalyzedTimerUpdate::RTrig { clk, m_var, q_var } => {
+                let m_var = self
+                    .program
+                    .variables
+                    .get(*m_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("m_var index {m_var} out of bounds"),
+                    })?;
+                let q_var = self
+                    .program
+                    .variables
+                    .get(*q_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("q_var index {q_var} out of bounds"),
+                    })?;
+                self.emit_expression(clk, tokens)?;
+                tokens.push("IF".to_string());
+                tokens.push(Self::variable_name(m_var));
+                tokens.extend([
+                    "@".to_string(),
+                    "0=".to_string(),
+                    "IF".to_string(),
+                    "1".to_string(),
+                    "ELSE".to_string(),
+                    "0".to_string(),
+                    "THEN".to_string(),
+                ]);
+                tokens.push(Self::variable_name(q_var));
+                tokens.push("!".to_string());
+                tokens.push("1".to_string());
+                tokens.push(Self::variable_name(m_var));
+                tokens.push("!".to_string());
+                tokens.push("ELSE".to_string());
+                tokens.push("0".to_string());
+                tokens.push(Self::variable_name(q_var));
+                tokens.push("!".to_string());
+                tokens.push("0".to_string());
+                tokens.push(Self::variable_name(m_var));
+                tokens.push("!".to_string());
+                tokens.push("THEN".to_string());
+            }
+            AnalyzedTimerUpdate::FTrig { clk, m_var, q_var } => {
+                let m_var = self
+                    .program
+                    .variables
+                    .get(*m_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("m_var index {m_var} out of bounds"),
+                    })?;
+                let q_var = self
+                    .program
+                    .variables
+                    .get(*q_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("q_var index {q_var} out of bounds"),
+                    })?;
+                self.emit_expression(clk, tokens)?;
+                tokens.push("IF".to_string());
+                tokens.push("0".to_string());
+                tokens.push(Self::variable_name(q_var));
+                tokens.push("!".to_string());
+                tokens.push("1".to_string());
+                tokens.push(Self::variable_name(m_var));
+                tokens.push("!".to_string());
+                tokens.push("ELSE".to_string());
+                tokens.push(Self::variable_name(m_var));
+                tokens.extend([
+                    "@".to_string(),
+                    "1".to_string(),
+                    "=".to_string(),
+                    "IF".to_string(),
+                    "1".to_string(),
+                    "ELSE".to_string(),
+                    "0".to_string(),
+                    "THEN".to_string(),
+                ]);
+                tokens.push(Self::variable_name(q_var));
+                tokens.push("!".to_string());
+                tokens.push("0".to_string());
+                tokens.push(Self::variable_name(m_var));
+                tokens.push("!".to_string());
+                tokens.push("THEN".to_string());
+            }
+            AnalyzedTimerUpdate::Ton {
+                in_expr,
+                pt_expr,
+                et_var,
+                pt_var,
+                q_var,
+                dt_var,
+            } => {
+                let et_var = self
+                    .program
+                    .variables
+                    .get(*et_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("et_var index {et_var} out of bounds"),
+                    })?;
+                let pt_var = self
+                    .program
+                    .variables
+                    .get(*pt_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("pt_var index {pt_var} out of bounds"),
+                    })?;
+                let q_var = self
+                    .program
+                    .variables
+                    .get(*q_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("q_var index {q_var} out of bounds"),
+                    })?;
+
+                self.emit_expression(pt_expr, tokens)?;
+                tokens.push(Self::variable_name(pt_var));
+                tokens.push("!".to_string());
+
+                self.emit_expression(in_expr, tokens)?;
+                tokens.push("IF".to_string());
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                tokens.push(Self::variable_name(pt_var));
+                tokens.extend(["@".to_string(), "<".to_string(), "IF".to_string()]);
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                self.emit_dt(*dt_var, tokens)?;
+                tokens.extend([
+                    "+".to_string(),
+                    Self::variable_name(et_var),
+                    "!".to_string(),
+                ]);
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                tokens.push(Self::variable_name(pt_var));
+                tokens.extend([
+                    "@".to_string(),
+                    ">".to_string(),
+                    "IF".to_string(),
+                    Self::variable_name(pt_var),
+                    "@".to_string(),
+                    Self::variable_name(et_var),
+                    "!".to_string(),
+                    "THEN".to_string(),
+                ]);
+
+                tokens.push("THEN".to_string());
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                tokens.push(Self::variable_name(pt_var));
+                tokens.extend([
+                    "@".to_string(),
+                    "<".to_string(),
+                    "0=".to_string(),
+                    "IF".to_string(),
+                    "1".to_string(),
+                    "ELSE".to_string(),
+                    "0".to_string(),
+                    "THEN".to_string(),
+                    Self::variable_name(q_var),
+                    "!".to_string(),
+                ]);
+
+                tokens.push("ELSE".to_string());
+                tokens.extend([
+                    "0".to_string(),
+                    Self::variable_name(et_var),
+                    "!".to_string(),
+                    "0".to_string(),
+                    Self::variable_name(q_var),
+                    "!".to_string(),
+                    "THEN".to_string(),
+                ]);
+            }
+            AnalyzedTimerUpdate::Tof {
+                in_expr,
+                pt_expr,
+                et_var,
+                pt_var,
+                q_var,
+                dt_var,
+            } => {
+                let et_var = self
+                    .program
+                    .variables
+                    .get(*et_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("et_var index {et_var} out of bounds"),
+                    })?;
+                let pt_var = self
+                    .program
+                    .variables
+                    .get(*pt_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("pt_var index {pt_var} out of bounds"),
+                    })?;
+                let q_var = self
+                    .program
+                    .variables
+                    .get(*q_var)
+                    .ok_or_else(|| ForthError {
+                        message: format!("q_var index {q_var} out of bounds"),
+                    })?;
+
+                self.emit_expression(pt_expr, tokens)?;
+                tokens.push(Self::variable_name(pt_var));
+                tokens.push("!".to_string());
+
+                self.emit_expression(in_expr, tokens)?;
+                tokens.push("IF".to_string());
+
+                tokens.extend([
+                    "1".to_string(),
+                    Self::variable_name(q_var),
+                    "!".to_string(),
+                    "0".to_string(),
+                    Self::variable_name(et_var),
+                    "!".to_string(),
+                    "ELSE".to_string(),
+                ]);
+
+                tokens.push(Self::variable_name(q_var));
+                tokens.extend(["@".to_string(), "IF".to_string()]);
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                tokens.push(Self::variable_name(pt_var));
+                tokens.extend(["@".to_string(), "<".to_string(), "IF".to_string()]);
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                self.emit_dt(*dt_var, tokens)?;
+                tokens.extend([
+                    "+".to_string(),
+                    Self::variable_name(et_var),
+                    "!".to_string(),
+                ]);
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                tokens.push(Self::variable_name(pt_var));
+                tokens.extend([
+                    "@".to_string(),
+                    ">".to_string(),
+                    "IF".to_string(),
+                    Self::variable_name(pt_var),
+                    "@".to_string(),
+                    Self::variable_name(et_var),
+                    "!".to_string(),
+                    "THEN".to_string(),
+                ]);
+
+                tokens.push("THEN".to_string());
+
+                tokens.push(Self::variable_name(et_var));
+                tokens.push("@".to_string());
+                tokens.push(Self::variable_name(pt_var));
+                tokens.extend([
+                    "@".to_string(),
+                    "<".to_string(),
+                    "0=".to_string(),
+                    "IF".to_string(),
+                    "0".to_string(),
+                    Self::variable_name(q_var),
+                    "!".to_string(),
+                    "THEN".to_string(),
+                ]);
+
+                tokens.push("THEN".to_string());
+                tokens.push("THEN".to_string());
+            }
+        }
+        Ok(())
+    }
+
+    fn emit_dt(&self, dt_var: Option<usize>, tokens: &mut Vec<String>) -> Result<(), ForthError> {
+        if let Some(var_idx) = dt_var {
+            let var = self
+                .program
+                .variables
+                .get(var_idx)
+                .ok_or_else(|| ForthError {
+                    message: format!("cycle_dt variable index {var_idx} out of bounds"),
+                })?;
+            tokens.push(Self::variable_name(var));
+            tokens.push("@".to_string());
+        } else {
+            tokens.push("1".to_string());
         }
         Ok(())
     }
