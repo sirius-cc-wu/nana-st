@@ -31,7 +31,7 @@ Introduce native discrete ordinal `CASE` selection statements into NanaST:
    - Restrict selector expressions strictly to discrete ordinal types (`INT` and `DINT`). Selectors of type `REAL` or `BOOL` are rejected at compile time.
    - Require match values to be integer literals.
    - Enforce uniqueness: duplicate match values across any branch are rejected at compile time.
-   - Enforce a compile-time branch ceiling of $\le 60$ branches to comply with `rfopt`'s `MAX_CONTROL_NESTING = 64`.
+   - Enforce a cumulative compile-time control depth ceiling ($\le 64$ open frames across enclosing blocks, case branches, and nested bodies) to comply with `rfopt`'s `MAX_CONTROL_NESTING = 64`.
 3. **Forth Code Generation & Stack Invariants:**
    - Evaluate selector once onto the data stack.
    - Lower each branch to: `DUP <val> = IF DROP <branch_body> ELSE ...`

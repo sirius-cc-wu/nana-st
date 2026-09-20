@@ -32,7 +32,7 @@ Industrial machine control logic across the 101 captured legacy Forth programs i
 - **Discrete literal match lists:** Each case branch specifies one or more comma-separated ordinal literal values (`val1, val2: <stmts>`). Duplicate match values within a `CASE` statement are rejected at compile time.
 - **Exhaustive fallback:** An optional `ELSE` branch executes when no case match occurs. If `ELSE` is omitted, the selector is cleanly dropped and state remains unchanged.
 - **Stack-neutral Forth lowering:** Lowering uses `DUP` and `DROP` to ensure all execution paths leave identical data stack shapes, satisfying `rfopt`'s static stack verifier.
-- **Nesting limit guardrail:** Semantic analysis enforces a compile-time branch limit of 60 branches to prevent exceeding `rfopt`'s `MAX_CONTROL_NESTING = 64`.
+- **Nesting limit guardrail:** Semantic analysis tracks cumulative control-flow nesting depth across enclosing blocks, case branches, and nested bodies to prevent exceeding `rfopt`'s `MAX_CONTROL_NESTING = 64`.
 
 ## Ubiquitous Language
 
@@ -71,7 +71,7 @@ Industrial machine control logic across the 101 captured legacy Forth programs i
 | **R4** | **Omitted ELSE Safety** | When the selector matches none of the declared branch values and `ELSE` is omitted, the selector is discarded and no statement executes. |
 | **R5** | **Ordinal Selector Restriction** | The selector must evaluate to `DataType::Int` or `DataType::Dint`. Selectors of type `REAL` or `BOOL` are rejected with compile-time type errors. |
 | **R6** | **Duplicate Value Prohibition** | Specifying the same match value across multiple branches or within the same branch list is rejected with diagnostic: `duplicate case match value '<val>'`. |
-| **R7** | **Nesting Limit Enforcement** | A `CASE` block with more than 60 branches is rejected during semantic analysis with diagnostic: `CASE statement exceeds maximum supported branch limit of 60`. |
+| **R7** | **Cumulative Nesting Limit Enforcement** | Semantic analysis tracks cumulative control-flow nesting depth through enclosing blocks, case branches, and nested branch bodies. The compiler rejects any program where peak cumulative nesting depth exceeds the target limit of 64 open frames (with diagnostic: `control-flow nesting exceeds limit of 64`). |
 | **R8** | **Single Evaluation Invariant** | The selector expression is evaluated once upon entering the `CASE` block. It is not re-evaluated during subsequent branch comparisons. |
 
 ### Concrete Examples
@@ -134,7 +134,7 @@ END_CASE;
 2. **Semantic Analysis:**
    - Validates ordinal selector type (`INT` or `DINT`).
    - Detects and reports duplicate branch match values.
-   - Enforces the $\le 60$ branch ceiling.
+   - Enforces the cumulative $\le 64$ control frame ceiling.
 3. **Forth Code Generation:**
    - Emits single selector evaluation.
    - Lowers branches with `DUP` and `DROP` ensuring zero net stack delta on all paths.

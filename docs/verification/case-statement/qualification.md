@@ -23,7 +23,7 @@ date: "2026-09-20"
 | **R4** | Omitted `ELSE` discards selector and leaves state untouched. | Requirements Sec. Business Rules & Architecture Sec. 2 | VERIFIED: Unconditional fallback `DROP` specified. |
 | **R5** | Ordinal selector restriction (`INT`, `DINT`); `REAL`/`BOOL` rejected. | Requirements Sec. Business Rules R5 & Acceptance Criteria 2 | VERIFIED: Compile-time type check specified. |
 | **R6** | Rejection of duplicate case match values. | Requirements Sec. Business Rules R6 & Acceptance Criteria 2 | VERIFIED: Compile-time uniqueness check specified. |
-| **R7** | Nesting limit enforcement ($\le 60$ branches). | Requirements Sec. Business Rules R7 & Architecture Sec. 4 | VERIFIED: Prevents exceeding `rfopt` `MAX_CONTROL_NESTING = 64`. |
+| **R7** | Cumulative nesting limit enforcement ($\le 64$ frames). | Requirements Sec. Business Rules R7 & Architecture Sec. 4 | VERIFIED: Tracks cumulative depth across enclosing blocks, case arms, and nested bodies. |
 | **R8** | Single evaluation of selector expression. | Requirements Sec. Business Rules R8 & Architecture Sec. 3 | VERIFIED: Evaluated once upon entry onto data stack. |
 
 ## 3. Test Integrity & Specification Audit

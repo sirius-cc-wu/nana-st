@@ -42,7 +42,7 @@ ST Source: CASE state OF 1: b1; 2, 3: b2; ELSE b_else; END_CASE;
 - **Semantic Analyzer (`src/sema.rs`):**
   - Asserts `selector` evaluates to `DataType::Int` or `DataType::Dint`. Rejects `DataType::Real` and `DataType::Bool`.
   - Evaluates match values to constant values; maintains a set of seen values to detect duplicates.
-  - Enforces `branches.len() <= 60` to stay strictly within `rfopt`'s `MAX_CONTROL_NESTING = 64`.
+  - Tracks cumulative control-flow nesting depth across enclosing blocks, case arms, and branch-body statements, rejecting any path that exceeds `rfopt`'s `MAX_CONTROL_NESTING = 64`.
   - Recursively checks statements in all branch bodies.
 - **Forth Code Generator (`src/forth.rs`):**
   - Emits selector expression once.
@@ -79,7 +79,6 @@ pub enum StatementKind {
     If {
         condition: Expression,
         then_body: Vec<Statement>,
-        elsif_branches: Vec<ElsifBranch>,
         else_body: Vec<Statement>,
     },
     Case {
@@ -155,4 +154,4 @@ Let ambient data stack before `CASE` be $S$:
 1. **Zero Runtime Submodule Additions:** Must require no additions or modifications to the words in `rfopt`.
 2. **Single Evaluation Invariant:** The selector expression must only be evaluated once per scan execution.
 3. **Strict Stack Neutrality:** Every execution path through the `CASE` statement must drop the selector and balance the stack prior to exiting.
-4. **Compile-Time Nesting Ceiling:** Must reject `branches.len() > 60` with a compile-time diagnostic.
+4. **Cumulative Compile-Time Nesting Ceiling:** Rather than checking branch count in isolation, semantic analysis must track total cumulative control depth (enclosing blocks + open case branches + branch-body controls) and reject depths $> 64$ with a compile-time diagnostic.
