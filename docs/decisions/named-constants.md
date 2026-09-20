@@ -35,8 +35,9 @@ Introduce native named constant declarations via `VAR CONSTANT` into NanaST:
 3. **Forth Code Generation & Zero Runtime Overhead:**
    - Omit constant declarations from `VARIABLE` and `FVARIABLE` RAM allocations.
    - Omit constant symbols entirely from `nana-init` reset routines.
-   - Lower references to constants directly as immediate literals in expressions, avoiding memory fetch words (`@`, `F@`).
-   - Emit `<val> CONSTANT nana-const-<name>` for integer and boolean constants to support top-level Forth dictionary inspection.
+   - Emit `<val> CONSTANT nana-const-<name>` for integer and boolean constants (using Forth-2012 `TRUE` and `FALSE` for booleans).
+   - Emit `<val>e FCONSTANT nana-const-<name>` for `REAL` constants, leveraging native Forth-2012 `FCONSTANT` support now merged into `rfopt`.
+   - References compile directly to Subroutine Threaded Code (STC) immediate machine literals, avoiding memory bus reads (`@`, `F@`) during `nana-scan`.
 
 ## Consequences
 

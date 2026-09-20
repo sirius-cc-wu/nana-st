@@ -16,9 +16,9 @@ Approved for specification and design.
 - Supported data types for constants include `BOOL`, `INT`, `DINT`, and `REAL`.
 - Every constant declaration requires a static compile-time initializer expression.
 - Constant identifiers are read-only: assignment statements targeting a constant symbol are rejected during semantic analysis with source-located diagnostics.
-- Integer and Boolean constants lower directly to Forth-2012 `<val> CONSTANT nana-const-<name>`, which `rfopt` natively compiles into Subroutine Threaded Code (STC) immediate literals.
-- `REAL` constants declare the requirement for `FCONSTANT` in `rfopt`, while supporting constant-folding literal inlining during compilation.
-- Constants allocate zero bytes of mutable RAM cells and emit zero initialization instructions in `nana-init`.
+- Integer and Boolean constants lower directly to Forth-2012 `<val> CONSTANT nana-const-<name>` (using `TRUE` and `FALSE` for booleans), which `rfopt` natively compiles into Subroutine Threaded Code (STC) immediate literals.
+- `REAL` constants lower directly to Forth-2012 `<val> FCONSTANT nana-const-<name>` (e.g. `26.0e FCONSTANT nana-const-high_limit`), supported natively by `rfopt` and compiled into STC immediate float literals.
+- Both `CONSTANT` and `FCONSTANT` allocate zero bytes of mutable RAM cells and emit zero initialization instructions in `nana-init`.
 
 This feature extends the approved [NanaST vision](../../VISION.md) and addresses Capability Gap 4 identified in the [legacy Forth migration proposal](../../proposals/nanast-legacy-forth-migration.md).
 
@@ -71,7 +71,7 @@ Machine control programs in BNC (including chiller temperature limits, dosing pH
 | **R5** | **Zero RAM Cell Allocation** | The compiler emits no Forth `VARIABLE` or `FVARIABLE` declarations for constants, consuming zero bytes of target data memory. |
 | **R6** | **Zero `nana-init` Overhead** | The compiler generates no store (`!`, `F!`) instructions in `nana-init` for constants. |
 | **R7** | **Constant Expression Inlining in Expressions** | Referencing a constant identifier inside an expression evaluates its value directly as an immediate literal without emitting `@` or `F@` fetch words. |
-| **R8** | **Forth Target Emission** | For integer and boolean constants, the compiler emits `<val> CONSTANT nana-const-<name>` for top-level dictionary inspection where applicable. |
+| **R8** | **Forth Target Emission** | For integer and boolean constants, the compiler emits `<val> CONSTANT nana-const-<name>` (using `TRUE`/`FALSE` for booleans). For REAL constants, the compiler emits `<val>e FCONSTANT nana-const-<name>`. Both forms support top-level dictionary inspection and compile to immediate STC literals. |
 
 ### Concrete Examples
 

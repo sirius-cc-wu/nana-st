@@ -24,7 +24,7 @@ date: "2026-09-20"
 | **R5** | Zero RAM cell allocation in Forth output. | Requirements Sec. Business Rules & Architecture Sec. 4 | VERIFIED: Omission from `VARIABLE`/`FVARIABLE` guaranteed. |
 | **R6** | Zero initialization instructions in `nana-init`. | Requirements Sec. Business Rules & Architecture Sec. 4 | VERIFIED: Omission from reset code guaranteed. |
 | **R7** | Expression inlining as immediate literals without `@` or `F@`. | Requirements Sec. Business Rules & Architecture Sec. 4 | VERIFIED: Direct STC literal encoding specified. |
-| **R8** | Forth target dictionary emission (`<val> CONSTANT nana-const-<name>`). | Requirements Sec. Business Rules & Architecture Sec. 4 | VERIFIED: Seamless integration with `rfopt/src/nanast/loader.rs`. |
+| **R8** | Forth target dictionary emission (`CONSTANT`, `FCONSTANT`, `TRUE`, `FALSE`). | Requirements Sec. Business Rules & Architecture Sec. 4 | VERIFIED: Seamless integration with `rfopt` runtime (supporting `CONSTANT`, `FCONSTANT`, `TRUE`, and `FALSE`). |
 
 ## 3. Test Integrity & Specification Audit
 - [x] All 8 Example Mapping rules have concrete positive and negative behavioral specifications.

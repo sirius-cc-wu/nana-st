@@ -100,19 +100,34 @@ pub enum ConstantValue {
 // In emit_declarations:
 for decl in &program.declarations {
     if decl.storage == StorageClass::Constant {
-        // Option B: Emit top-level Forth constant for integer/bool cells
-        if matches!(decl.data_type, DataType::Int | DataType::Dint | DataType::Bool) {
-            let val_str = match &decl.constant_value {
-                ConstantValue::Bool(b) => if *b { "-1" } else { "0" },
-                ConstantValue::Int(i) => i.to_string(),
-                ConstantValue::Dint(d) => d.to_string(),
-                _ => unreachable!(),
-            };
-            tokens.push(val_str);
-            tokens.push("CONSTANT".to_string());
-            tokens.push(format!("nana-const-{}", decl.name));
+        match decl.data_type {
+            DataType::Bool => {
+                let val_str = if decl.constant_value == ConstantValue::Bool(true) { "TRUE" } else { "FALSE" };
+                tokens.push(val_str.to_string());
+                tokens.push("CONSTANT".to_string());
+                tokens.push(format!("nana-const-{}", decl.name));
+            }
+            DataType::Int | DataType::Dint => {
+                let val_str = match &decl.constant_value {
+                    ConstantValue::Int(i) => i.to_string(),
+                    ConstantValue::Dint(d) => d.to_string(),
+                    _ => unreachable!(),
+                };
+                tokens.push(val_str);
+                tokens.push("CONSTANT".to_string());
+                tokens.push(format!("nana-const-{}", decl.name));
+            }
+            DataType::Real => {
+                let val_str = match &decl.constant_value {
+                    ConstantValue::Real(r) => format!("{}e", r),
+                    _ => unreachable!(),
+                };
+                tokens.push(val_str);
+                tokens.push("FCONSTANT".to_string());
+                tokens.push(format!("nana-const-{}", decl.name));
+            }
+            _ => unreachable!(),
         }
-        // REAL constants are inlined in expressions
         continue;
     }
     // Normal VARIABLE / FVARIABLE emission...
