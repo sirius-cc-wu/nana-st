@@ -95,8 +95,10 @@ END_VAR
 chiller_enable := ENABLE_DEFAULT;
 IF water_temp > HIGH_LIMIT THEN
     valve_open := TRUE;
-ELSIF water_temp < LOW_LIMIT THEN
-    valve_open := FALSE;
+ELSE
+    IF water_temp < LOW_LIMIT THEN
+        valve_open := FALSE;
+    END_IF;
 END_IF;
 END_PROGRAM
 ```
