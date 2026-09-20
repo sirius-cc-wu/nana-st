@@ -201,3 +201,4 @@ fn emit_if_statement(
 1. **No Runtime Additions:** NanaST must not require or emit synthetic runtime helpers for `ELSIF`.
 2. **Short-Circuit Guarantee:** Once a condition evaluates to `TRUE`, no subsequent condition expressions shall be evaluated. In STC native execution, this translates to an unconditional direct branch past all subsequent checks.
 3. **Purity of Expressions:** Conditions in `ELSIF` clauses are pure expressions that evaluate to boolean cells without side-effects on process-image variables.
+4. **Compile-Time Nesting Bound:** Cumulative control-flow nesting depth (enclosing `IF` blocks plus sequential `ELSIF` branch frames and branch-body controls) must not exceed `rfopt`'s `MAX_CONTROL_NESTING = 64`. Semantic analysis must reject excessive nesting at compile time with a source-located diagnostic.

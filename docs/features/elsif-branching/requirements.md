@@ -70,7 +70,7 @@ In industrial automation and BNC cyclic control programs, decision logic frequen
 | **R5** | **No Branch Matches Without ELSE** | When the primary condition and all `ELSIF` conditions evaluate to `FALSE` and `ELSE` is omitted, no statement in the conditional block executes, and program state remains unmodified. |
 | **R6** | **Boolean Condition Invariant** | Semantic analysis rejects any `ELSIF` condition whose expression does not evaluate to `DataType::Bool`. |
 | **R7** | **Empty Branch Body Tolerance** | Empty statement lists inside an `ELSIF` body or `ELSE` body are valid and produce well-formed, no-op Forth branch paths. |
-| **R8** | **Arbitrary Nesting Support** | `IF ... ELSIF ... END_IF` statements can be arbitrarily nested inside `then_body`, `elsif_branches`, or `else_body` without control-stack collisions. |
+| **R8** | **Bounded Nesting Support** | `IF ... ELSIF ... END_IF` statements can be nested inside `then_body`, `elsif_branches`, or `else_body`. Semantic analysis tracks cumulative control-flow nesting depth across enclosing blocks and branches, rejecting any path that exceeds the target runtime limit of 64 open frames with a compile-time diagnostic. |
 
 ### Concrete Examples
 

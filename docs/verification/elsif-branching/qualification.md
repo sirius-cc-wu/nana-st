@@ -24,7 +24,7 @@ date: "2026-09-20"
 | **R5** | Omitting ELSE preserves state when all conditions false. | Requirements Sec. Business Rules & Architecture Sec. 3 | VERIFIED: No-op exit path specified. |
 | **R6** | Rejection of non-boolean ELSIF condition expressions. | Requirements Sec. Acceptance Criteria & Architecture Sec. 2 | VERIFIED: Strict type checking in sema specified. |
 | **R7** | Empty branch body tolerance. | Requirements Sec. Business Rules R7 | VERIFIED: Empty statement lists handled without stack drift. |
-| **R8** | Arbitrary nesting of conditional ladders. | Requirements Sec. Business Rules R8 | VERIFIED: Recursive parsing and codegen frames specified. |
+| **R8** | Bounded nesting of conditional ladders ($\le 64$ frames). | Requirements Sec. Business Rules R8 & Architecture Sec. Invariants | VERIFIED: Cumulative depth tracking and target bound specified. |
 
 ## 3. Test Integrity & Specification Audit
 - [x] All 8 Example Mapping rules have concrete positive and negative behavioral specifications.
