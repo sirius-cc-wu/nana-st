@@ -149,9 +149,11 @@ Let ambient data stack before `CASE` be $S$:
 5. **Rejoining at `THEN`s:** Every branch path exits with identical stack state $S$. Net stack change of the complete construct is precisely $0$.
 6. **Stack Shape Verification:** `rfopt::nanast::loader`'s verifier checks `true_stack == false_stack` at each `THEN` and succeeds without errors.
 
-## Architectural Invariants
+## Resource, Memory & Execution Invariants
 
-1. **Zero Runtime Submodule Additions:** Must require no additions or modifications to the words in `rfopt`.
-2. **Single Evaluation Invariant:** The selector expression must only be evaluated once per scan execution.
-3. **Strict Stack Neutrality:** Every execution path through the `CASE` statement must drop the selector and balance the stack prior to exiting.
-4. **Cumulative Compile-Time Nesting Ceiling:** Rather than checking branch count in isolation, semantic analysis must track total cumulative control depth (enclosing blocks + open case branches + branch-body controls) and reject depths $> 64$ with a compile-time diagnostic.
+1. **Zero Runtime Allocation:** Pure control-flow transform; zero dynamic heap allocations, zero static variable memory cells, and zero runtime handles.
+2. **Single Evaluation & Stack Lifecycle:** The selector expression is evaluated onto the data stack exactly once per scan execution.
+3. **Strict Stack Neutrality ($\Delta S = 0$):** Every branch path (via `DROP` before statements) and the fallback path (via unconditional `DROP`) restores the stack, proven neutral for `rfopt`'s stack verifier.
+4. **Compile-Pass Memory Boundary:** AST nodes and symbol table structures exist solely during compilation passes and are deallocated upon code generation completion, with zero persistent runtime handles.
+5. **Cumulative Frame Nesting Limit:** Semantic analysis enforces total cumulative control depth $\le 64$ (enclosing blocks + open case branches + branch-body controls) to strictly observe `rfopt`'s `MAX_CONTROL_NESTING = 64`.
+6. **Zero Runtime Submodule Additions:** Pure Forth-2012 lowering requires zero modifications or additions to the words in `rfopt`.

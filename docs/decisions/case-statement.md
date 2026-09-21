@@ -51,4 +51,3 @@ Introduce native discrete ordinal `CASE` selection statements into NanaST:
 
 - Requirements: [`docs/features/case-statement/requirements.md`](../features/case-statement/requirements.md)
 - Architecture: [`docs/features/case-statement/architecture.md`](../features/case-statement/architecture.md)
-- Rust Lifecycle: [`docs/features/case-statement/rust-lifecycle.md`](../features/case-statement/rust-lifecycle.md)

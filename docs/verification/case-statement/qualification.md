@@ -11,7 +11,7 @@ date: "2026-09-20"
 ## 1. Executive Summary
 - **Governing Spec**: [`docs/features/case-statement/requirements.md`](../../features/case-statement/requirements.md)
 - **Governing ADR**: [`docs/decisions/case-statement.md`](../../decisions/case-statement.md)
-- **Lifecycle Design**: [`docs/features/case-statement/rust-lifecycle.md`](../../features/case-statement/rust-lifecycle.md)
+- **Architecture**: [`docs/features/case-statement/architecture.md`](../../features/case-statement/architecture.md)
 - **Final Verdict**: **VERIFIED**
 
 ## 2. Behavioral Compliance Matrix (Example Mapping)
