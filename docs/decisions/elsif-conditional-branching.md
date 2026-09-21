@@ -48,3 +48,4 @@ Introduce native `ELSIF` multi-branch conditional syntax into NanaST:
 
 - Requirements: [`docs/features/elsif-branching/requirements.md`](../features/elsif-branching/requirements.md)
 - Architecture: [`docs/features/elsif-branching/architecture.md`](../features/elsif-branching/architecture.md)
+- Detailed Design: [`docs/features/elsif-branching/detailed-design.md`](../features/elsif-branching/detailed-design.md)

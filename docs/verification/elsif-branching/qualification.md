@@ -12,6 +12,7 @@ date: "2026-09-20"
 - **Governing Spec**: [`docs/features/elsif-branching/requirements.md`](../../features/elsif-branching/requirements.md)
 - **Governing ADR**: [`docs/decisions/elsif-conditional-branching.md`](../../decisions/elsif-conditional-branching.md)
 - **Architecture**: [`docs/features/elsif-branching/architecture.md`](../../features/elsif-branching/architecture.md)
+- **Detailed Design**: [`docs/features/elsif-branching/detailed-design.md`](../../features/elsif-branching/detailed-design.md)
 - **Final Verdict**: **VERIFIED**
 
 ## 2. Behavioral Compliance Matrix (Example Mapping)
