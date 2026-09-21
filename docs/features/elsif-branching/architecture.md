@@ -196,9 +196,12 @@ fn emit_if_statement(
   - Each `ELSE` resolves the preceding `IF` to point to the instruction after `ELSE`, and pushes a new forward branch to the end of the entire construct.
   - Emitting exactly `frame_count` `THEN` words resolves every outstanding forward jump in LIFO order.
 
-## Invariants & Guardrails
+## Resource, Memory & Execution Invariants
 
-1. **No Runtime Additions:** NanaST must not require or emit synthetic runtime helpers for `ELSIF`.
-2. **Short-Circuit Guarantee:** Once a condition evaluates to `TRUE`, no subsequent condition expressions shall be evaluated. In STC native execution, this translates to an unconditional direct branch past all subsequent checks.
-3. **Purity of Expressions:** Conditions in `ELSIF` clauses are pure expressions that evaluate to boolean cells without side-effects on process-image variables.
-4. **Compile-Time Nesting Bound:** Cumulative control-flow nesting depth (enclosing `IF` blocks plus sequential `ELSIF` branch frames and branch-body controls) must not exceed `rfopt`'s `MAX_CONTROL_NESTING = 64`. Semantic analysis must reject excessive nesting at compile time with a source-located diagnostic.
+1. **Zero Runtime Allocation:** Pure control-flow transform; zero dynamic heap allocations, zero static variable RAM cells, and zero runtime handles.
+2. **Control-Flow Frame Balancing:** Emits exactly $1 + (\text{number of ELSIF branches})$ `THEN` words, strictly unwinding and resolving all open forward branch frames on the compiler control stack.
+3. **Strict Data Stack Neutrality:** Condition evaluation and branch execution guarantee a net data stack delta of $\Delta S = 0$ upon exiting the construct.
+4. **Strict Short-Circuit Execution:** In STC native execution, as soon as one condition evaluates to `TRUE`, an unconditional direct branch bypasses all subsequent condition checks and fallback logic.
+5. **Expression Purity:** Conditions in `ELSIF` clauses are pure expressions that evaluate to boolean cells without side-effects on process-image variables.
+6. **Cumulative Control-Flow Nesting Bound:** Cumulative control-flow nesting depth (enclosing `IF` blocks plus sequential `ELSIF` branch frames and branch-body controls) must not exceed `rfopt`'s `MAX_CONTROL_NESTING = 64`. Semantic analysis rejects excessive nesting at compile time with a source-located diagnostic.
+7. **No Runtime Additions:** NanaST introduces zero new Forth words or runtime modifications in `rfopt`.

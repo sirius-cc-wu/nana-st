@@ -11,7 +11,7 @@ date: "2026-09-20"
 ## 1. Executive Summary
 - **Governing Spec**: [`docs/features/elsif-branching/requirements.md`](../../features/elsif-branching/requirements.md)
 - **Governing ADR**: [`docs/decisions/elsif-conditional-branching.md`](../../decisions/elsif-conditional-branching.md)
-- **Lifecycle Design**: [`docs/features/elsif-branching/rust-lifecycle.md`](../../features/elsif-branching/rust-lifecycle.md)
+- **Architecture**: [`docs/features/elsif-branching/architecture.md`](../../features/elsif-branching/architecture.md)
 - **Final Verdict**: **VERIFIED**
 
 ## 2. Behavioral Compliance Matrix (Example Mapping)
