@@ -12,6 +12,7 @@ date: "2026-09-20"
 - **Governing Spec**: [`docs/features/named-constants/requirements.md`](../../features/named-constants/requirements.md)
 - **Governing ADR**: [`docs/decisions/named-constants.md`](../../decisions/named-constants.md)
 - **Architecture**: [`docs/features/named-constants/architecture.md`](../../features/named-constants/architecture.md)
+- **Detailed Design**: [`docs/features/named-constants/detailed-design.md`](../../features/named-constants/detailed-design.md)
 - **Final Verdict**: **VERIFIED**
 
 ## 2. Behavioral Compliance Matrix (Example Mapping)

@@ -51,3 +51,4 @@ Introduce native named constant declarations via `VAR CONSTANT` into NanaST:
 
 - Requirements: [`docs/features/named-constants/requirements.md`](../features/named-constants/requirements.md)
 - Architecture: [`docs/features/named-constants/architecture.md`](../features/named-constants/architecture.md)
+- Detailed Design: [`docs/features/named-constants/detailed-design.md`](../features/named-constants/detailed-design.md)
