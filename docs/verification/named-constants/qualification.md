@@ -11,7 +11,7 @@ date: "2026-09-20"
 ## 1. Executive Summary
 - **Governing Spec**: [`docs/features/named-constants/requirements.md`](../../features/named-constants/requirements.md)
 - **Governing ADR**: [`docs/decisions/named-constants.md`](../../decisions/named-constants.md)
-- **Lifecycle Design**: [`docs/features/named-constants/rust-lifecycle.md`](../../features/named-constants/rust-lifecycle.md)
+- **Architecture**: [`docs/features/named-constants/architecture.md`](../../features/named-constants/architecture.md)
 - **Final Verdict**: **VERIFIED**
 
 ## 2. Behavioral Compliance Matrix (Example Mapping)

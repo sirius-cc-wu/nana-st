@@ -205,9 +205,10 @@ ExpressionKind::Variable(ident) => {
 }
 ```
 
-## Architectural Invariants
+## Resource, Memory & Execution Invariants
 
-1. **Zero RAM Footprint Invariant:** Constant definitions must never allocate Forth memory cells (`VARIABLE` or `FVARIABLE`).
-2. **Zero Init Footprint Invariant:** Constant definitions must never emit store instructions inside `nana-init`.
-3. **No Memory Load Invariant:** Expression references to constant symbols must not emit `@` or `F@` memory fetch instructions.
-4. **Compile-Time Rejection Invariant:** Any mutation attempt on a constant identifier must be caught and rejected at compile time with a source-located error.
+1. **Zero Target RAM Footprint Invariant:** Constant definitions must never allocate Forth memory cells (`VARIABLE` or `FVARIABLE`), consuming zero bytes of target data memory.
+2. **Zero `nana-init` Overhead Invariant:** Constant definitions must never emit store instructions (`!`, `F!`) inside `nana-init` reset routines.
+3. **Zero Cyclic Scan Memory Bus Traffic Invariant:** Expression references to constant symbols must not emit `@` or `F@` memory fetch instructions. The compiler emits immediate literals directly into the STC instruction stream (`mov reg, imm` / `fmov reg, imm`), eliminating memory bus reads during cyclic scans (`nana-scan`).
+4. **Compile-Pass Memory Boundary:** AST declaration nodes and symbol table entries exist solely during compilation passes and are deallocated upon code generation completion, with zero persistent runtime handles.
+5. **Compile-Time Rejection Invariant:** Any mutation attempt on a constant identifier must be caught and rejected at compile time with a source-located error diagnostic (`cannot assign to constant '<name>'`).

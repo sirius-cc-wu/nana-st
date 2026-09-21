@@ -51,4 +51,3 @@ Introduce native named constant declarations via `VAR CONSTANT` into NanaST:
 
 - Requirements: [`docs/features/named-constants/requirements.md`](../features/named-constants/requirements.md)
 - Architecture: [`docs/features/named-constants/architecture.md`](../features/named-constants/architecture.md)
-- Rust Lifecycle: [`docs/features/named-constants/rust-lifecycle.md`](../features/named-constants/rust-lifecycle.md)
