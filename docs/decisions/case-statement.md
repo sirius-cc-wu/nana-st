@@ -51,3 +51,4 @@ Introduce native discrete ordinal `CASE` selection statements into NanaST:
 
 - Requirements: [`docs/features/case-statement/requirements.md`](../features/case-statement/requirements.md)
 - Architecture: [`docs/features/case-statement/architecture.md`](../features/case-statement/architecture.md)
+- Detailed Design: [`docs/features/case-statement/detailed-design.md`](../features/case-statement/detailed-design.md)

@@ -12,6 +12,7 @@ date: "2026-09-20"
 - **Governing Spec**: [`docs/features/case-statement/requirements.md`](../../features/case-statement/requirements.md)
 - **Governing ADR**: [`docs/decisions/case-statement.md`](../../decisions/case-statement.md)
 - **Architecture**: [`docs/features/case-statement/architecture.md`](../../features/case-statement/architecture.md)
+- **Detailed Design**: [`docs/features/case-statement/detailed-design.md`](../../features/case-statement/detailed-design.md)
 - **Final Verdict**: **VERIFIED**
 
 ## 2. Behavioral Compliance Matrix (Example Mapping)
