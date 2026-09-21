@@ -15,8 +15,8 @@ How can NanaST incorporate immutable named constants (`VAR CONSTANT`) into its S
 ## Selected Structure
 
 ```text
-ST Source: VAR CONSTANT LIMIT : REAL := 26.0; END_VAR
-  -> Lexer: Emits TokenKind::Constant
+ST Source: VAR CONSTANT LIMIT : REAL := 26.0; END_VAR (or VAR_CONSTANT ... END_VAR)
+  -> Lexer: Emits TokenKind::Constant or TokenKind::VarConstant
   -> Parser: Constructs Declaration with StorageClass::Constant and mandatory initializer
   -> Semantic Analysis: Evaluates initializer, stores evaluated ConstantValue in symbol table,
                         and rejects assignments targeting constant symbols
@@ -29,11 +29,13 @@ ST Source: VAR CONSTANT LIMIT : REAL := 26.0; END_VAR
 
 - **Compiler Lexer (`src/lexer.rs`):**
   - Adds `TokenKind::Constant` matching case-insensitive `"CONSTANT"`.
+  - Adds `TokenKind::VarConstant` matching case-insensitive `"VAR_CONSTANT"`.
 - **Compiler AST (`src/ast.rs`):**
   - Expands `StorageClass` with `StorageClass::Constant`.
   - Reuses existing `Declaration` struct with `initializer: Option<Expression>`.
 - **Compiler Parser (`src/parser.rs`):**
-  - In `parse_declaration_block`: Detects `VAR` followed by `CONSTANT` to select `StorageClass::Constant`.
+  - In `parse_program`: Extends the declaration block loop condition to accept `TokenKind::VarConstant`.
+  - In `parse_declaration_block`: Accepts both `TokenKind::VarConstant` and `TokenKind::Var` followed by `TokenKind::Constant` to set `StorageClass::Constant`.
   - In `parse_declaration`: When `storage == StorageClass::Constant`, asserts that `initializer.is_some()`. If absent, raises diagnostic: `constant declaration '<name>' requires an initializer`.
 - **Semantic Analyzer (`src/sema.rs`):**
   - Extends `ConstantValue` enum to include `Real(f64)` alongside `Bool`, `Int`, and `Dint`.
@@ -62,7 +64,60 @@ pub enum StorageClass {
 }
 ```
 
-### 2. Semantic Analysis Invariant Checks (`src/sema.rs`)
+### 2. Lexer and Parser Block Recognition (`src/lexer.rs`, `src/parser.rs`)
+
+To support standard IEC 61131-3 `VAR CONSTANT ... END_VAR` blocks alongside the `VAR_CONSTANT ... END_VAR` alias:
+
+**Lexer keyword mapping (`src/lexer.rs`):**
+```rust
+match identifier.to_ascii_uppercase().as_str() {
+    // ...
+    "CONSTANT" => TokenKind::Constant,
+    "VAR_CONSTANT" => TokenKind::VarConstant,
+    // ...
+}
+```
+
+**Parser declaration block dispatch (`src/parser.rs`):**
+```rust
+// In parse_program:
+while matches!(
+    self.peek_kind(),
+    Some(TokenKind::Var | TokenKind::VarInput | TokenKind::VarOutput | TokenKind::VarConstant)
+) {
+    declarations.extend(self.parse_declaration_block()?);
+}
+
+// In parse_declaration_block:
+let storage = match self.advance() {
+    Some(Token {
+        kind: TokenKind::Var,
+        ..
+    }) => {
+        if self.peek_is(&TokenKind::Constant) {
+            self.advance();
+            StorageClass::Constant
+        } else {
+            StorageClass::Local
+        }
+    }
+    Some(Token {
+        kind: TokenKind::VarConstant,
+        ..
+    }) => StorageClass::Constant,
+    Some(Token {
+        kind: TokenKind::VarInput,
+        ..
+    }) => StorageClass::Input,
+    Some(Token {
+        kind: TokenKind::VarOutput,
+        ..
+    }) => StorageClass::Output,
+    _ => return Err(self.error_here("expected a variable declaration block")),
+};
+```
+
+### 3. Semantic Analysis Invariant Checks (`src/sema.rs`)
 
 ```rust
 // In statement analysis (assignment check):
@@ -75,7 +130,7 @@ if symbol.storage == StorageClass::Constant {
 }
 ```
 
-### 3. Constant Evaluation in Symbol Resolution (`src/sema.rs`)
+### 4. Constant Evaluation in Symbol Resolution (`src/sema.rs`)
 
 ```rust
 pub struct ConstantSymbol {
@@ -94,7 +149,7 @@ pub enum ConstantValue {
 }
 ```
 
-### 4. Forth Code Generation Pipeline (`src/forth.rs`)
+### 5. Forth Code Generation Pipeline (`src/forth.rs`)
 
 ```rust
 // In emit_declarations:

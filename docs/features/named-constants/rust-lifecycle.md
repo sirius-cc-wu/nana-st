@@ -13,7 +13,7 @@ tags: [rust, lifecycle, nanast, rfopt, constants, immutability, var-constant]
 
 | Resource | Owner | Release Behavior |
 |---|---|---|
-| `TokenKind::Constant` | Lexer token stream | Consumed during parser step |
+| `TokenKind::Constant` / `TokenKind::VarConstant` | Lexer token stream | Consumed during parser step |
 | `Declaration` with `StorageClass::Constant` | `Program` AST | Dropped after semantic analysis completes |
 | `ConstantSymbol` & `ConstantValue` | `AnalyzedProgram` symbol table | Dropped when Forth emission completes |
 | Runtime Memory Cells | None (zero allocation) | No runtime allocations occur |
@@ -25,7 +25,7 @@ Constants exist entirely within the compiler's symbol resolution and code genera
 
 ```text
 Compilation Phase:
-  -> Lexer identifies VAR CONSTANT block
+  -> Lexer identifies VAR CONSTANT or VAR_CONSTANT block
   -> Parser parses identifier, type, and requires initializer
   -> Semantic analyzer evaluates initializer to ConstantValue
   -> Constant symbol registered in immutable symbol table
